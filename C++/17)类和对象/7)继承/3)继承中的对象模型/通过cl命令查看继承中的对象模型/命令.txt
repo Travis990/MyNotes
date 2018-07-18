@@ -1,0 +1,1 @@
+cl /d1 reportSingleClassLayoutSon test.cpp
