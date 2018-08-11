@@ -1,0 +1,8 @@
+    QList<QString>nameList;
+    nameList << "水票奇缘" << "忆梦如澜" <<"北京出版人"<<"Cherry"<<"淡然"
+             <<"娇娇girl"<<"落水无痕"<<"青墨暖暖"<<"无语";
+
+
+    QStringList iconNameList; //图标资源列表
+    iconNameList << "spqy"<< "ymrl" <<"qq" <<"Cherry"<< "dr"
+                 <<"jj"<<"lswh"<<"qmnn"<<"wy";
