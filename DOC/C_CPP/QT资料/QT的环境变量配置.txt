@@ -1,0 +1,2 @@
+E:\QT\Tools\mingw530_32\bin
+E:\QT\5.9.2\mingw53_32\bin
