@@ -1,0 +1,468 @@
+
+Oracle 2.5(基本SQL语法 )
+MySQL (1.5天  C API )
+
+
+1. 首次登录Oracle数据库的步骤：
+
+    
+    第一步： 以超级管理员用户登录数据库   
+        [oracle@deng ~]$ sqlplus / as sysdba
+    
+    第二步： 解锁对应的用户
+        SQL> alter user scott account unlock;
+        
+        User altered.
+    
+    第三步： 修改对应用户的密码
+        SQL> alter user scott identified by 11;
+        
+        User altered.
+    
+    第四步： 测试用户登录
+        SQL> quit;
+        [oracle@deng ~]$ sqlplus scott/11
+    
+
+2. 启动Oracle服务器
+
+    第一步： 以超级管理员用户登录数据库   
+    [oracle@deng ~]$ sqlplus / as sysdba
+	
+	第二步: 启动Oracle服务器
+	SQL> startup
+
+	第三步: 退出sqlplus登录
+	SQL> 
+	SQL> quit
+	
+	第四步: 启动oracle监听服务
+	[oracle@deng ~]$ lsnrctl start
+
+3. 关闭Oracle服务器
+
+    第一步： 以超级管理员用户登录数据库   
+    [oracle@deng ~]$ sqlplus / as sysdba
+	
+	第二步: 关闭服务器
+	SQL> shutdown immediate
+	Database closed.
+	Database dismounted.
+	ORACLE instance shut down.
+
+	第三步: 退出sqlplus登录
+	SQL> quit
+	
+	第四步: 关闭监听服务
+	[oracle@deng ~]$ lsnrctl stop
+
+	
+4. sqlplus其它一些命令
+
+	1) 显示当前用户
+		SQL> show user
+		USER is "SYS"
+		
+	2) 查看当前用户下所有的表信息
+	SQL> select * from tab;	
+		
+	3) 切换用户 用户名scott  密码 11
+	SQL> connect scott/11
+	Connected.
+
+	4) 查看指定表的信息
+	SQL> desc dept;
+	 Name					   Null?    Type
+	 ----------------------------------------- -------- ----------------------------
+	 DEPTNO 				   NOT NULL NUMBER(2)
+	 DNAME						    VARCHAR2(14)
+	 LOC						    VARCHAR2(13)
+
+	5) 设置行宽
+	SQL> set linesize 140;
+	SQL> select * from emp;
+
+		 EMPNO ENAME      JOB	       MGR HIREDATE	    SAL       COMM     DEPTNO
+	---------- ---------- --------- ---------- --------- ---------- ---------- ----------
+		  7369 SMITH      CLERK	      7902 17-DEC-80	    800 		   20
+		  7499 ALLEN      SALESMAN	      7698 20-FEB-81	   1600        300	   30
+		  7521 WARD       SALESMAN	      7698 22-FEB-81	   1250        500	   30
+		  7566 JONES      MANAGER	      7839 02-APR-81	   2975 		   20
+		  7654 MARTIN     SALESMAN	      7698 28-SEP-81	   1250       1400	   30
+		  7698 BLAKE      MANAGER	      7839 01-MAY-81	   2850 		   30
+		  7782 CLARK      MANAGER	      7839 09-JUN-81	   2450 		   10
+		  7788 SCOTT      ANALYST	      7566 19-APR-87	   3000 		   20
+		  7839 KING       PRESIDENT 	   17-NOV-81	   5000 		   10
+		  7844 TURNER     SALESMAN	      7698 08-SEP-81	   1500 	 0	   30
+		  7876 ADAMS      CLERK	      7788 23-MAY-87	   1100 		   20
+
+		 EMPNO ENAME      JOB	       MGR HIREDATE	    SAL       COMM     DEPTNO
+	---------- ---------- --------- ---------- --------- ---------- ---------- ----------
+		  7900 JAMES      CLERK	      7698 03-DEC-81	    950 		   30
+		  7902 FORD       ANALYST	      7566 03-DEC-81	   3000 		   20
+		  7934 MILLER     CLERK	      7782 23-JAN-82	   1300 		   10
+
+	14 rows selected.
+
+	6) 设置页大小
+	SQL> set pagesize 100;
+	SQL> select * from emp;
+
+		 EMPNO ENAME      JOB	       MGR HIREDATE	    SAL       COMM     DEPTNO
+	---------- ---------- --------- ---------- --------- ---------- ---------- ----------
+		  7369 SMITH      CLERK	      7902 17-DEC-80	    800 		   20
+		  7499 ALLEN      SALESMAN	      7698 20-FEB-81	   1600        300	   30
+		  7521 WARD       SALESMAN	      7698 22-FEB-81	   1250        500	   30
+		  7566 JONES      MANAGER	      7839 02-APR-81	   2975 		   20
+		  7654 MARTIN     SALESMAN	      7698 28-SEP-81	   1250       1400	   30
+		  7698 BLAKE      MANAGER	      7839 01-MAY-81	   2850 		   30
+		  7782 CLARK      MANAGER	      7839 09-JUN-81	   2450 		   10
+		  7788 SCOTT      ANALYST	      7566 19-APR-87	   3000 		   20
+		  7839 KING       PRESIDENT 	   17-NOV-81	   5000 		   10
+		  7844 TURNER     SALESMAN	      7698 08-SEP-81	   1500 	 0	   30
+		  7876 ADAMS      CLERK	      7788 23-MAY-87	   1100 		   20
+		  7900 JAMES      CLERK	      7698 03-DEC-81	    950 		   30
+		  7902 FORD       ANALYST	      7566 03-DEC-81	   3000 		   20
+		  7934 MILLER     CLERK	      7782 23-JAN-82	   1300 		   10
+
+	14 rows selected.
+
+	
+	
+	7) 设置表中列宽度 (a表示字符位置  9表示9个字符)
+	SQL> col ename for a9;
+	SQL> select * from emp;
+
+		 EMPNO ENAME     JOB	      MGR HIREDATE	   SAL	     COMM     DEPTNO
+	---------- --------- --------- ---------- --------- ---------- ---------- ----------
+		  7369 SMITH     CLERK	     7902 17-DEC-80	   800			  20
+		  7499 ALLEN     SALESMAN	     7698 20-FEB-81	  1600	      300	  30
+		  7521 WARD      SALESMAN	     7698 22-FEB-81	  1250	      500	  30
+		  7566 JONES     MANAGER	     7839 02-APR-81	  2975			  20
+		  7654 MARTIN    SALESMAN	     7698 28-SEP-81	  1250	     1400	  30
+		  7698 BLAKE     MANAGER	     7839 01-MAY-81	  2850			  30
+		  7782 CLARK     MANAGER	     7839 09-JUN-81	  2450			  10
+		  7788 SCOTT     ANALYST	     7566 19-APR-87	  3000			  20
+		  7839 KING      PRESIDENT		  17-NOV-81	  5000			  10
+		  7844 TURNER    SALESMAN	     7698 08-SEP-81	  1500		0	  30
+		  7876 ADAMS     CLERK	     7788 23-MAY-87	  1100			  20
+		  7900 JAMES     CLERK	     7698 03-DEC-81	   950			  30
+		  7902 FORD      ANALYST	     7566 03-DEC-81	  3000			  20
+		  7934 MILLER    CLERK	     7782 23-JAN-82	  1300			  10
+
+	14 rows selected.
+
+	8) 设置表中列宽度(数字) 一个9代表一位数字
+	SQL> col sal for 9999;
+	SQL> select * from emp;
+
+		 EMPNO ENAME     JOB	      MGR HIREDATE    SAL	COMM	 DEPTNO
+	---------- --------- --------- ---------- --------- ----- ---------- ----------
+		  7369 SMITH     CLERK	     7902 17-DEC-80   800		     20
+		  7499 ALLEN     SALESMAN	     7698 20-FEB-81  1600	 300	     30
+		  7521 WARD      SALESMAN	     7698 22-FEB-81  1250	 500	     30
+		  7566 JONES     MANAGER	     7839 02-APR-81  2975		     20
+		  7654 MARTIN    SALESMAN	     7698 28-SEP-81  1250	1400	     30
+		  7698 BLAKE     MANAGER	     7839 01-MAY-81  2850		     30
+		  7782 CLARK     MANAGER	     7839 09-JUN-81  2450		     10
+		  7788 SCOTT     ANALYST	     7566 19-APR-87  3000		     20
+		  7839 KING      PRESIDENT		  17-NOV-81  5000		     10
+		  7844 TURNER    SALESMAN	     7698 08-SEP-81  1500	   0	     30
+		  7876 ADAMS     CLERK	     7788 23-MAY-87  1100		     20
+		  7900 JAMES     CLERK	     7698 03-DEC-81   950		     30
+		  7902 FORD      ANALYST	     7566 03-DEC-81  3000		     20
+		  7934 MILLER    CLERK	     7782 23-JAN-82  1300		     10
+
+	14 rows selected.
+
+5. 查询 select
+	
+	基于scott用户  四张表
+	[oracle@deng ~]$ sqlplus  scott/11
+
+	5.1 查询员工表的所有记录
+	SQL> select * from emp;
+	或者
+	SQL> select empno, ename, job, mgr, hiredate, sal, comm, deptno from emp;
+
+	5.2 查询员工号、姓名、薪水
+	SQL> select empno, ename, sal from emp;
+
+     EMPNO ENAME	     SAL
+	---------- ---------- ----------
+		  7369 SMITH	     800
+		  7499 ALLEN	    1600
+		  7521 WARD 	    1250
+		  7566 JONES	    2975
+		  7654 MARTIN	    1250
+		  7698 BLAKE	    2850
+		  7782 CLARK	    2450
+		  7788 SCOTT	    3000
+		  7839 KING 	    5000
+		  7844 TURNER	    1500
+		  7876 ADAMS	    1100
+		  7900 JAMES	     950
+		  7902 FORD 	    3000
+		  7934 MILLER	    1300
+
+	14 rows selected.
+
+	5.3 增加查询年薪
+	SQL> select empno, ename, sal, sal * 12 from emp;
+
+     EMPNO ENAME	     SAL     SAL*12
+	---------- ---------- ---------- ----------
+		  7369 SMITH	     800       9600
+		  7499 ALLEN	    1600      19200
+		  7521 WARD 	    1250      15000
+		  7566 JONES	    2975      35700
+		  7654 MARTIN	    1250      15000
+		  7698 BLAKE	    2850      34200
+		  7782 CLARK	    2450      29400
+		  7788 SCOTT	    3000      36000
+		  7839 KING 	    5000      60000
+		  7844 TURNER	    1500      18000
+		  7876 ADAMS	    1100      13200
+		  7900 JAMES	     950      11400
+		  7902 FORD 	    3000      36000
+		  7934 MILLER	    1300      15600
+
+	14 rows selected.
+
+
+	5.4 去掉重复行 查询员工表中部门编号
+	SQL> select distinct deptno from emp;
+
+    DEPTNO
+	----------
+		30
+		20
+		10
+
+	5.5 查询员工表中工种 去掉重复的	
+	SQL> select distinct job from emp;
+
+	JOB
+	---------
+	CLERK
+	SALESMAN
+	PRESIDENT
+	MANAGER
+	ANALYST
+	
+	5.6 查询部门表中部门编号和工种 去掉重复(distinct修饰后面所有的列)
+	SQL> select distinct deptno, job from emp;
+
+    DEPTNO JOB
+	---------- ---------
+		20 CLERK
+		30 SALESMAN
+		20 MANAGER
+		30 CLERK
+		10 PRESIDENT
+		30 MANAGER
+		10 CLERK
+		10 MANAGER
+		20 ANALYST
+
+	9 rows selected.
+
+	5.7 查询: 员工号、姓名、月薪、年薪、奖金、年收入
+	SQL> select empno, ename, sal, sal * 12, comm, sal * 12 + nvl(comm, 0) from emp;
+
+	
+	5.8 查询奖金为空的所有员工的所有信息
+	SQL> select * from emp where comm is NULL;
+	
+	5.9 查询10号部门的员工信息
+	SQL> select * from emp where deptno = 10;
+	
+	5.10 查询”KING”的信息
+	SQL> select * from emp where ename = 'KING';
+
+	5.11 查询入职日期为1981年11月17日的员工
+	SQL> select * from emp where hiredate = '17-NOV-81';
+
+	5.12 查看系统当前的日期
+	SQL> select sysdate from dual;
+	
+	5.13 获取当前系统日期格式
+	SQL> select * from v$nls_parameters;
+
+	
+6. 过滤条件
+
+	6.1 查询薪水不等于1250的员工信息
+		SQL> select * from emp where sal <> 1250;
+		或者
+		SQL> select * from emp where sal <> 1250;
+		
+	6.2 查询工资在1000-2000之间的员工
+		SQL> select * from emp where sal >= 1000 and sal <= 2000;
+		或者
+		SQL> select * from emp where sal between 1000 and 2000;
+
+	6.3 查询81年2月至82年2月入职的员工信息
+		SQL> select * from emp where hiredate between '1-FEB-81' and '28-FEB-82';
+
+	6.4 查询部门号为10或20的员工信息
+		SQL> select * from emp where deptno = 10 or deptno = 20;
+		或者
+		SQL> select * from emp where deptno in (10, 20);
+
+		
+7. 模糊查询
+		
+	% 匹配任意多个字符
+	_ 匹配一个字符
+		
+	7.1 查询名字以S开头的员工
+	SQL> select * from emp where ename like 'S%';
+	
+	7.2 查询名字是4个字的员工
+	SQL> select * from emp where ename like '____';
+
+	7.3 查询名字中包含_的员工
+	SQL>  insert into emp(empno, ename, sal, deptno) values(1001, ' TOM_ABC ', 3000, 10);
+	SQL> select * from emp where ename like '%\_%' escape '\';
+	
+	7.4 转义单引号本身
+	SQL> select 'hello ''world' from dual;
+
+		
+8. 逻辑运算
+
+	8.1 查询薪水大于或者等于1000 并且小于或者等于2000的所有员工信息
+	SQL> select * from emp where sal >= 1000 and sal <= 2000;
+
+	8.2 查询部门编号为10或者为20的所有员工信息
+	SQL> select * from emp where deptno = 10 or deptno = 20;
+
+	8.3 查询部门编号不为10的所有员工信息
+	SQL> select * from emp where not deptno = 10;
+
+9. 排序
+
+	9.1 查询员工信息，按月薪排序
+	SQL> select * from emp order by sal;
+
+	9.2 查询员工的姓名, 薪水, 年薪信息, 并且根据年薪升序排序
+	SQL> select ename, sal, sal * 12 from emp order by sal * 12;
+	
+	9.3 查询员工的姓名, 薪水, 年薪信息, 并且根据年薪降序排序
+	SQL> select ename, sal, sal * 12 from emp order by sal * 12 desc;
+	
+	9.4 查询员工的姓名, 薪水, 年薪信息, 并且根据年薪升序排序 3表示序号
+	SQL> select ename, sal, sal * 12 from emp order by 3;
+
+	9.5 查询所有员工信息, 根据部门编号排序, 薪水排序. 第一关键字是部门编号 
+	SQL> select * from emp order by deptno, sal;
+
+	9.6 查询所有员工信息, 部门编号按照升序排序, 部门内部员工按照薪水降序排序
+	SQL> select * from emp order by deptno, sal desc;
+
+	9.7 查询所有员工信息, 部门编号按照降序排序, 部门内部员工按照薪水降序排序
+	SQL> select * from emp order by deptno desc, sal desc;
+
+	9.8 查询所有员工信息, 按照奖金升序排序  奖金为空表示无穷大
+	SQL> select * from emp order by comm;
+
+	9.9 查询所有员工信息, 按照奖金降序排序
+	SQL> select * from emp order by comm desc;
+
+	9.10 查询所有员工信息, 按照奖金降序排序, 如果奖金为空放到最后
+	SQL> select * from emp order by comm desc nulls last; 
+
+	
+10. 字符处理函数
+
+	10.1 将大写字母转为小写字母
+	SQL> select lower("HELLO WORLD') from dual;
+
+	10.2 将小写字母转为大写字母
+	SQL> select upper('hello world') from dual;
+
+	10.3 将所有单词的第一个字母转为大写字母
+	SQL> select initcap('hello world') from dual;
+	
+	10.4 连接两个字符串
+	SQL> select concat('hello', ' world') from dual;
+	
+	10.5 连接多个字符串
+	SQL> select concat('aaa', concat('bb', 'cc)) from dual;
+
+	10.6 连接多个字符串
+	SQL> select 'AAA' || 'BBB' || 'CCC' from dual;
+
+	10.7 查询员工的职位
+	SQL> select ename || ' is a ' || job from emp;
+	
+	10.8 在字符串中第3位开始取 到字符串结尾
+	SQL> select substr('hello world', 3) from dual;
+
+	10.9 从字符串第3位开始取字符, 取5个字符
+	SQL> select substr('hello world', 3, 5) from dual;
+	
+	10.10 计算字符串的字符数
+	SQL> select length('hello world') from dual;
+	
+	10.11 计算字符串字节数
+	SQL> select lengthb('hello world') from dual;
+
+	10.12 在母串中查找子串， 找到返回下标，计数从1开始。没有返回0
+	SQL> select instr('hello world', 'llo') from dual;
+
+	
+	10.13 左填充，参1：待填充的字符串，参2：填充后字符串的总长度(字节)， 参3：填充什么
+	SQL> select lpad('abcd', 10, '*') from dual;
+	
+	
+	10.14 右填充，参1：待填充的字符串，参2：填充后字符串的总长度(字节)， 参3：填充什么
+	SQL> select rpad('abcd', 10, '#') from dual;
+	
+	10.15 去掉前后空格
+	SQL> select trim('   hello world   ') from dual;
+
+	
+	10.16 去掉前后指定的字符
+	SQL> select trim('H' from 'Hhello worldHHHH') from dual;
+
+	10.17 替换字符
+	SQL> select replace('hello world', 'l', '*') from dual;
+
+	
+	10.18 删除字符
+	SQL> select replace('hello world', 'l', '') from dual;
+	
+
+11. 设置指定的编辑器
+    
+    临时设置
+    SQL> define_editor=gedit
+
+    永久设置：
+    [oracle@deng app]$ vim /home/oracle_11/app/oracle/product/11.2.0/db_1/sqlplus/admin/glogin.sql  
+
+    最后一行添加
+    define_editor=gedit
+
+    重新登录
+    
+
+12. 乱码问题解决
+
+    查询当前系统字符集
+    
+    SQL> select userenv('language') from dual;
+
+    USERENV('LANGUAGE')
+    ----------------------------------------------------
+    AMERICAN_AMERICA.ZHS16GBK
+
+
+    NLS_LANG环境变量是oralce客户端字符集配置
+    [oracle@deng ~]$ export NLS_LANG="AMERICAN_AMERICA.ZHS16GBK"
+
+
+    参考资料：https://blog.csdn.net/lqx0405/article/details/44776733
+
