@@ -1,0 +1,26 @@
+﻿  如何证明继承类中存在虚函数表.cpp
+  
+  class SheepCamel	size(12):
+  	+---
+   0	| +--- (base class Sheep)
+   0	| | {vbptr}
+  	| +---
+   4	| +--- (base class Camel)
+   4	| | {vbptr}
+  	| +---
+  	+---
+  	+--- (virtual base Animal)
+   8	| age
+  	+---
+  
+  SheepCamel::$vbtable@Sheep@:
+   0	| 0
+   1	| 8 (SheepCameld(Sheep+0)Animal)
+  
+  SheepCamel::$vbtable@Camel@:
+   0	| 0
+   1	| 4 (SheepCameld(Camel+0)Animal)
+  vbi:	   class  offset o.vbptr  o.vbte fVtorDisp
+            Animal       8       0       4 0
+  如何证明继承类中存在虚函数表.vcxproj -> F:\VS_Projects\如何证明继承类中存在虚函数表\Debug\如何证明继承类中存在虚函数表.exe
+  如何证明继承类中存在虚函数表.vcxproj -> F:\VS_Projects\如何证明继承类中存在虚函数表\Debug\如何证明继承类中存在虚函数表.pdb (Partial PDB)
