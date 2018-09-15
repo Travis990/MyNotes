@@ -39,6 +39,12 @@ void test()
 	cout << sizeof(Sheep) << endl;
 }
 
+void test2()
+{
+	SheepCamel sp;
+	cout << *((int*)(*((int*)&sp + 1))+1 )<< endl;
+}
+
 int main()
 {
 	test();
