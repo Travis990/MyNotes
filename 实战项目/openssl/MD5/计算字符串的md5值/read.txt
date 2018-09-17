@@ -1,0 +1,7 @@
+项目构建配置项:
+
+项目属性>>VC++目录>>包含目录      导入 C:\openssl\include
+
+项目属性>>VC++目录>>库目录         导入 C:\openssl\lib
+
+项目属性>>输入>>附加依赖项            导入  libcrypto.lib 、libssl.lib
