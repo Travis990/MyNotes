@@ -1,0 +1,1 @@
+g++ -o "/root/projects/Socket_Client/bin/x64/Debug/Socket_Client.out" -Wl,--no-undefined -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack /root/projects/Socket_Client/obj/x64/Debug/main.o /root/projects/Socket_Client/obj/x64/Debug/poolsocket.o /root/projects/Socket_Client/obj/x64/Debug/socketlog.o /root/projects/Socket_Client/obj/x64/Debug/socketutil.o -lpthread

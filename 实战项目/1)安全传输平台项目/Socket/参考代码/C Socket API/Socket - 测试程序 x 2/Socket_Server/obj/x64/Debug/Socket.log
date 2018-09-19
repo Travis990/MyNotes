@@ -1,0 +1,13 @@
+﻿  Cleaning remote project directory
+C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: 中间目录(C:\Users\Kevin\Desktop\项目1\code\Socket\Socket\obj\x64\Debug\)包含从另一个项目(Socket.vcxproj)共享的文件。   这会导致错误的清除和重新生成行为。
+  Validating architecture
+  Validating sources
+  Copying sources remotely to '192.168.247.128'
+  Starting remote build
+  Compiling sources:
+  main.c
+  poolsocket.c
+  socketlog.c
+  socketutil.c
+  Linking objects
+  Socket.vcxproj -> C:\Users\Kevin\Desktop\项目1\code\Socket\Socket\bin\x64\Debug\Socket_Server.out

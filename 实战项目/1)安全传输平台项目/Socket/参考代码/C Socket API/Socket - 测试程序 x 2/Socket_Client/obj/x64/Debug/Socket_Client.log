@@ -1,0 +1,12 @@
+﻿  Cleaning remote project directory
+  Validating architecture
+  Validating sources
+  Copying sources remotely to '192.168.247.128'
+  Starting remote build
+  Compiling sources:
+  main.c
+  poolsocket.c
+  socketlog.c
+  socketutil.c
+  Linking objects
+  Socket_Client.vcxproj -> C:\Users\Kevin\Desktop\项目1\code\Socket\Socket_Client\bin\x64\Debug\Socket_Client.out
