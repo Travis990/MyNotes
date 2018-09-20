@@ -1,0 +1,13 @@
+1. linux 查看共享内存状态命令:
+
+# ipcs -m
+
+2. 通过 shmid 删除一块共享内存:
+
+# ipcs -m [shmid]
+
+3.  通过 keyid 删除一块共享内存:
+
+# ipcs -M [shmid]
+
+
