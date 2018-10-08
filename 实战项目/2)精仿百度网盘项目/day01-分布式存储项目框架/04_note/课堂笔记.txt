@@ -1,0 +1,533 @@
+1 分布式云盘技术要点
+
+    1 客户端
+        qt
+            网络通讯 http通讯
+            界面的调整（样式表）
+
+
+    2 服务端
+        http服务器nginx （负载均衡、反向代理）
+        fastCGI编程
+        mysql 
+        redis （缓存服务器——非关系型数据库）
+        fastDFS （分布式文件系统）
+
+
+
+
+2 功能模块
+    1 用户管理（登录，注册，记住密码，服务器设置）
+    2 文件管理
+        1 上传、下载文件(增删查改)
+        2 对文件的共享
+            一个用户共享的文件其他用户可见
+
+        3 下载榜
+
+
+
+
+课程安排
+    1 fastDFS （分布式文件系统）
+    2 redis 
+    3 nginx + 反向代理+负载均衡
+    4 nginx + fastCGI编程
+    5 框架搭建(数据库设计，客户端服务端框架)
+    6 注册
+    7 登录
+    8 上传下载 
+    9 文件列表 
+    10 文件分享模块
+
+
+
+3 http 服务器
+    
+    apache httpd 行业老大
+    nginx        后起之秀
+    tomcat       java写，用在java
+    weblogic     企业级别应用收费
+
+
+
+    服务器的IO处理模式
+
+    1 helloworld 单进程单线程 (最低级，只要一个任务处理卡在那里,服务器挂了)
+    2 多进程、多线程
+        能够提升服务器效率
+        依赖于硬件
+
+    3 多路IO复用
+        select /poll
+        epoll
+        提高服务器的io并发性能
+
+        业务的处理是单线性的，某个业务也卡在那里很久，也会影响整体的运行效率
+
+
+    4 多路IO+多线程
+
+        做到业务处理多线性
+
+        服务器软件的最优解
+
+
+
+    5 还想提高服务器的性能
+        软件已经到瓶颈，再继续往软件投入，成效不高
+        投资硬件
+            换CPU
+            加内存
+
+            做集群
+
+
+
+
+    nginx ： epoll + 多线程
+
+
+
+
+
+4 文件系统 File System  FS
+    <<计算机操作系统>>
+
+    windows下面使用的
+        fat16
+        fat32
+        ntfs    (windows NT file system)
+
+
+    linux下使用的
+        ext3
+        ext4
+
+
+    macos （苹果）
+        apfs
+
+
+    文件系统：管理文件如何存储到物理介质（U盘，硬盘，软盘...）
+
+    对于开发人员，读写文件使用 read /write
+
+    例子：100M的磁盘空间(物理连续的空间)
+        A 40M
+        B 10M
+        C 40M
+        D 10M 
+
+
+        删除了 B和D ，还要继续存一个文件E 15M ，怎么存？
+        不同的文件系统有不同的策略：
+            B这个位置存E前10M
+            D这个位置存E后5M
+
+
+
+    文件系统是操作系统的一部分，文件系统也要挂在到操作系统上才能进行读写
+
+    传统的文件系统限制：受限于物理介质
+
+    如果要添加硬盘，相当于添加一个新的文件系统，一台机器能够添加的硬盘有限
+
+    如何以一个文件系统满足文件数据的无限增长的需求？——分布式文件系统
+
+        有别于传统的文件系统，将文件系统建立在多台机器上
+
+
+
+
+
+5 FastDFS 框架以及角色
+
+    三个角色：
+        client:
+            发起 read/write请求
+
+        tracker 
+            整个文件系统的管理者
+
+        storage 
+            主要存储文件的服务器
+
+    上传
+
+    1 storage启动的时候会主动连接tracker，上报信息
+    2 客户端要上传文件，会先连接tracker 询问要上传到那台服务器
+    3 tracker 回应client，告诉某台storage服务器的地址
+    4 client 连接storage服务器，完成文件的一个上传
+
+    下载
+    1 客户端要下载文件，会先连接tracker 询问要下载的文件存到哪台服务器了？
+    2 tracker 回应client，告诉某台storage服务器的地址
+    3 client 连接storage服务器，完成文件下载
+
+
+    哪个服务器要先启动？
+        tracker 对于storage也是一个服务器的角色，所以要先启动
+        1 首先启动tracker
+        2 启动storage
+
+
+
+6 FastDFS 集群
+    分布式 和 集群 两个概念的区别？
+        分布式：一个软件系统部署在多台机器上 ，缺了一个工作会出问题
+        集群： 多台服务器同时对外提供服务
+            强调每台服务器都可以独立对外提供服务
+
+    三个角色都可以集群
+        client 
+            多个客户端同时发起请求（大并发）
+
+        tracker 集群
+            tracker 是整个文件系统的核心,挂掉了整个文件系统就挂了
+                不能让整个文件系统受限于某台服务器的生命
+
+
+            tracker集群为了防止单点故障
+
+
+        storage集群
+            满足：
+                稳定性 + 扩展性
+
+
+
+            有两种形式：
+                1 备份
+                2 扩容
+
+
+            storage通过分组进行管理
+                同一个组的机器数据会相互备份
+                不同组的机器就是独立扩容的关系
+
+
+                同组备份
+                异组扩容
+
+
+        注意：
+            同组 A机器 1T B机器500G 对外提供的容量是500G
+            所有数据都要能够备份
+
+        文件系统的容量就是所有组可用容量相加
+
+
+7 FastDFS安装
+
+    首先要安装 libfastcommon的库
+
+        ./make.sh
+        sudo ./make.sh install
+
+
+    再安装 fastdfs
+        ./make.sh
+        sudo ./make.sh install
+
+
+    验证安装：
+        fdfs_  有自动提示  可以看到 fdfs_trackerd命令
+
+
+
+
+    
+8 fastDFS的配置
+    三个角色，对应三种命令
+
+        tracker
+            fdfs_trackerd
+
+        storage
+            fdfs_storaged
+
+
+        client 
+            上传文件下载文件....
+
+    配置文件都放在 /etc/fdfs
+
+    tracker 的配置文件
+        disabled = false  如果为true表示当前配置文件无效
+
+
+        # bind an address of this host              
+        # empty for bind all addresses of this host 
+        bind_addr=    不填相当于 0.0.0.0
+
+            192.168. ....
+            127.0.0.1 .....                               
+
+            注意 绑定192的地址，客户端通过127来访问访问不了
+            如果绑定127的地址，客户端通过192的地址是访问不了的
+
+
+            全0，两个地址都可以访问
+
+        port = 22122   端口号
+
+
+        # the base path to store data and log files 
+        # 存数据和日志文件的路径 
+        base_path=/home/yuqing/fastdfs               
+
+            注意：路径必须要对于tracker服务器可访问，必须存在
+
+
+        # the method of selecting group to upload files                  
+        # 0: round robin     # 轮询                                                
+        # 1: specify group   # 指定某个组                                            
+        # 2: load balance, select the max free space group to upload file
+            负载均衡，选择可用空间最大的那个组
+        store_lookup=2                                                   
+
+        上传文件的时候使用哪个storage组
+
+        # which group to upload file                                        
+        # when store_lookup set to 1, must set store_group to the group name
+        store_group=group2  
+        如果上面策略指定组，那么这个配置就会生效，指定哪个组                                                
+
+
+        # which storage server to upload file   
+            指定哪台服务器作为文件上传，刚才是指定组，一个组可能有多台服务器  
+            有可能一些机器就是单纯做备份不对外提供服务                            
+        # 0: round robin (default)          轮询                                     
+        # 1: the first server order by ip address            服务器ip排序的第一个                   
+        # 2: the first server order by priority (the minimal)       权重第一个         
+        # Note: if use_trunk_file set to true, must set store_server to 1 or 2
+        store_server=0   
+
+
+
+
+        启动 tracker服务器
+
+            fdfs_trackerd /etc/fdfs/tracker.conf start 
+
+
+
+
+    storage的配置
+
+        disabled = false   同上
+
+        group_name = group1
+            指定storage服务器的组名
+
+                同组备份
+                异组扩容
+
+        bind_addr=  绑定ip地址 同上
+        port  同上
+
+        base_path 同上  必须存在，而且有访问权限
+
+
+        # path(disk or mount point) count, default value is 1                     
+        store_path_count=1               
+        存储路径的计数:
+            一台机子上可能有多个硬盘或者多个分区
+
+                                                                      
+        # store_path#, based 0, if store_path0 not exists, it's value is base_path
+        # the paths must be exist                                                 
+        store_path0=/home/yuqing/fastdfs                                          
+        #store_path1=/home/yuqing/fastdfs2                                        
+
+        store_path_count 设置了多少个路径，这里就要配置多少个store_path
+
+
+
+        # tracker_server can ocur more than once, and tracker_server format is  
+        #  "host:port", host can be hostname or ip address                      
+        
+        tracker_server=127.0.0.1:22122                                    
+
+            因为storage服务器启动的时候连接tracker，这里要制定tracker的地址
+
+            根据tracker服务器绑定的地址 如果是192 ,这里就填192 ....
+
+            坑：
+                tracker_server的地址不能配置成为127.0.0.1
+                不允许 storage 服务器和 tracker服务器同一台机器
+
+            解决方法： 
+                1 使用192的地址来启动服务器
+                2 作弊：可以用 127.0.0.2
+
+    客户端的配置
+
+        base_path 同上
+        tracker_server 
+            可以配置127.0.0.1 
+
+
+
+
+        使用客户端验证上传
+
+            fdfs_upload_file /etc/fdfs/client.conf 1.txt 
+
+
+    客户端命令
+        上传 fdfs_upload_file 客户端的配置文件 要上传的文件
+            group1/M00/00/00/fwAAAVu7DKGARqkEAAAABncc3SA923.txt
+            返回一个文件id
+
+        下载 fdfs_download_file 配置文件 要下载文件id [本地保存文件名]
+
+        删除文件 fdfs_delete_file 配置文件 文件id
+
+        查看文件的基本信息 fdfs_file_info 配置文件 文件id
+
+        fdfs_monitor 客户端的配置文件
+              监视器  运维工具
+
+            主动连接tracker服务器获取一些运维信息
+
+
+    文件id的内容
+        group1/M00/00/00/fwAAAVqBVPKAJiRUAAAADFmwwCQ483.txt
+        •   group1
+        组名
+            对应 storage 服务器的组名
+        •   M00
+            虚拟磁盘目录
+            对应的路径-存储节点的配置文件
+            store_path0=/home/xxx/fastdfs/storage
+
+
+        •   00/00
+            实际的存储目录
+            最终对应到硬盘的目录
+            /home/itcast/fastdfs/storage/store_path0/data/00/00
+
+
+        •   文件名
+            fwAAAVqBVPKAJiRUAAAADFmwwCQ483.txt
+
+            采用的是对一段二进制数据进行base64编码得到的，二进制数据如下
+                源storage server ip
+                CRC32
+                文件创建时间
+                文件大小
+                随机数
+
+
+            如此便可以全局唯一的标识某个文件
+            因为有随机数，其次有时间，基本上这个文件名全局唯一
+
+
+    注意：
+        通过 fastdfs的上传文件，之后再下载，原文件名会丢失 
+        最终下载下来的文件名已经变成了 fileid 对应的文件名
+
+
+
+
+9 开发思路
+    fastdfs只管文件的存储和读取，没有管理文件名,原文件名是丢失的
+    为什么要这么做？
+        A 存储 一个文件 1.txt  1G
+        B 存储  1.txt   1M
+
+        文件重名，出现覆盖
+
+
+    开发需求：用户使用云盘存什么文件，最终拿到的文件文件名没变 
+        将文件名还原
+
+        解决思路：
+            将某个用户的某个文件名跟文件id对应起来进行存储
+
+            A 用户 存储 1.txt   
+            拿到fileid group1/M00/00/00/fwAAAVqBVPKAJiRUAAAADFmwwCQ483.txt
+
+            下次A用户继续下载文件 发送请求 dowload 1.txt
+
+            将1.txt 转化为 group1/M00/00/00/fwAAAVqBVPKAJiRUAAAADFmwwCQ483.txt
+
+            从 fastDFS 下载文件，再传给用户1.txt
+
+
+
+10 开发需求
+
+    封装fastDFS 上传 ， 获取文件ID存储到程序的char数组
+    1 传统
+        翻看文档，查api，不存在
+
+        老实人，看源代码
+            fdfs_upload_file 命令的源代码
+
+
+
+
+    2 偷懒
+        如果没有源代码，只有二进制可执行程序,如何拿到标准输出的信息？
+        使用execlp 执行命令  ，执行某个命令,将当前进程代码执行区域替换掉（变身）
+        子进程 + execlp
+
+        
+        1 创建一对管道
+        2 创建子进程
+        3 子进程重定向管道到标准输出 dup2
+        4 父进程读管道
+        5 子进程变身成为 fdfs_upload_file  ，执行文件上传的命令 ，文件id还是输出到标准输出
+            其实已经重定向到管道 
+
+        6 父进程可以读取到文件id
+
+
+
+    定义函数格式
+
+
+    C语言：
+        规定 out_file_id 的长度 128
+
+        int my_upload(const char *config_file ,const char *upload_file , char *out_file_id)
+            config_file 配置文件
+            upload_file 要上传的文件地址
+            out_file_id 传出参数，最终保存的内容是file_id
+
+            出错返回非0
+            成功返回0 ，file_id 有值
+
+        编译命令：
+            gcc fdfs_upload_file.c -I/usr/include/fastcommon -I/usr/include/fastdfs -lfastcommon -lfdfsclient
+
+    C++：
+        实现 FastDFSClient 类的封装
+
+
+        runtime_exception的使用
+
+            throw std::runtime_exception("错误信息描述");
+
+
+
+    对于错误的处理，c用返回值表示错误，C++用异常
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
