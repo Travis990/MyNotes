@@ -1,0 +1,45 @@
+知识点 nginx
+    nginx的了解
+    nginx的下载和安装
+    nginx的配置
+        配置一个http服务器
+        部署一个网站
+        配置反向代理
+        配置负载均衡
+
+nginx
+    是什么？
+    能做什么？
+	优势
+
+反向代理的概念
+
+nginx的安装
+
+nginx 常用的操作命令
+
+nginx master/worker机制
+
+nginx的配置
+
+部署静态网站
+
+课堂练习
+    使用yundisk的网站，添加nginx的location配置信息实现以下功能
+    将yundisk解压后放到 /usr/local/nginx目录下
+
+    1 访问地址 http://ip/reg.html             能够看到reg.html
+
+    2 访问地址 http://ip/hello/reg.html       能够看到reg.html
+
+    3 访问地址 http://ip/upload/              能够看到upload.html
+
+域名和ip
+
+虚拟主机
+
+反向代理配置
+
+负载均衡配置
+
+	权重与备用

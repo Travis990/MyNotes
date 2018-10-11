@@ -1,0 +1,414 @@
+1 知识点 nginx
+    nginx的了解
+    nginx的下载和安装
+    nginx的配置
+        配置一个http服务器
+        部署一个网站
+        配置反向代理
+        配置负载均衡
+
+2 nginx
+    是什么？
+        全称 : engine X
+
+
+
+    能做什么？
+        http 服务器 
+        负载均衡服务器
+        反向代理服务器
+        mail 服务器
+
+
+
+    优势
+        小巧灵活
+            体积小（C语言写）
+            配置灵活
+
+        效率高
+            经过大量的网站验证
+
+            taobao  ->  tengine 
+
+                将nginx 源代码修改 再发布
+
+
+
+
+
+3 反向代理的概念
+    
+    正向代理：
+        内网的机器要连接外网，经过的一台代理服务器，叫做正向代理
+
+    反向代理：
+        外网的机器想要连接内网的某台服务器，要经过一台代理，叫反向代理
+
+    只是内外网方向不一样
+
+
+
+
+
+
+
+4 nginx的安装
+    
+    解压 nginx openssl zlib pcre 源代码到目录
+
+    进入nginx的源代码目录
+        ./configure --with-pcre=pcre源代码目录 --with-zlib=zlib源代码目录 --with-openssl=openssl源代码目录
+
+
+        make 
+        sudo make install
+
+
+    启动nginx
+        建立软连接
+        sudo ln -s /usr/local/nginx/sbin/nginx /usr/local/bin/nginx
+
+
+        sudo nginx    (nginx 在 /usr/local/nginx/sbin)
+
+
+
+
+5 nginx 常用的操作命令
+
+    nginx 
+        -t 测试配置文件，并且退出
+
+        -s 对nginx服务器发送信号
+            stop
+                停止服务器（暴力）
+            quit
+                停止服务器，温柔的
+                会等待最后一个请求处理完成后再停止服务器
+            reopen
+                重新打开log
+
+
+            reload
+                常用
+
+                重新加载nginx的配置文件
+                nginx 支持 7*24不间断服务更新
+
+
+
+
+
+6 nginx master/worker机制
+
+    两者是父子进程关系
+    数量关系：
+        master只有一个
+        worker 可以有多个， 一般是CPU的核心数量
+            可以最大发挥机器性能
+
+    master进程 管理者 当官的
+        保证nginx 7*24不间断，如果有一个worker挂了，master可以再
+        启动新的worker
+        另外master进程也会处理用户发送过来的信号
+            nginx -s ....
+
+    worker进程 干活的
+        http请求来，都是worker进程进行处理
+
+
+
+7 nginx的配置
+    配置文件在哪？
+        不同的安装方式导致配置文件放置的地址不同
+        sudo nginx -t  
+
+        /usr/local/nginx/conf/nginx.conf  
+
+
+    配置文件怎么写？语法
+
+        都是键值对 
+
+            key   val1 val2 ..... ;
+
+            value可以有多个，多个情况下表示数组
+            一个键值对的最后要以分号结束
+
+            value的类型 可以是普通字符串，
+            也可以是一个花括号括起来的配置快
+            http {
+                key val;
+                key val;
+                ....;
+            }
+
+            支持将一些通用的配置放到一些配置块里边编程某个块生效的配置
+            块内的配置可以继承块外的配置
+
+
+
+    nginx 配置的模块划分
+
+        main
+          | -http (配置nginx作为http服务器的一些配置)  1
+          |    |-  server (虚拟主机的配置,一个server对应一个站点)  n
+          |          |- location (资源的定位方式)    n
+          | -mail (配置的email服务器)     1
+
+    配置选项内容
+
+        user  nobody;   #用哪个用户来启动 worker进程
+            # 保证 worker进程的权限小于等于master进程
+            建议改为root，防止出现一些权限错误
+
+        worker_processes  1;      # worker进程的数量
+            应该等于 CPU的核心数          
+                                            
+        #error_log  logs/error.log;         
+        #error_log  logs/error.log  notice;  设置错误日志的级别 
+        #error_log  logs/error.log  info;   
+            错误日志的设置
+
+                nginx的资源目录可以使用绝对路径和相对路径
+
+                相对路径相对于谁？相对于 prefix
+                可以在 nginx启动的使用使用 -p 替换掉
+                默认是 /usr/local/nginx
+
+
+
+        http模块的配置
+            include mime.types ;  也是将某个文件展开到这里
+            default_type application/octet-stream;
+                默认nginx使用数据类型  字节流
+
+            access_log  访问日志;
+
+
+
+        server 模块的配置
+            server 模块是控制 服务器对外提供的站点的信息
+
+            listen  80;  //监听80端口 http的默认端口
+                    //https 默认端口 443 
+
+
+            server_name localhsot;  #指定服务器的域名
+
+            charset koi8-r;   服务器默认的字符集
+                    俄罗斯文 
+                    建议改为 utf-8
+
+
+        location 模块配置 重点
+            定义一个资源的定位
+
+
+            location / {     #访问哪个资源 ，最后定位到哪里
+                # / 表示 根目录 ，表示访问 http://192.168.../   如何定位资源      ，去掉 http://ip:port             
+                root   html;  
+                    # 从root目录开始查找资源
+                    # 最终定位 /usr/local/nginx/html 目录
+
+                index  index.html index.htm;   
+                    # 如果资源访问的是一个目录，那么默认返回哪个文件
+                    # 首先先查看 index.html ，没有再看index.htm  ，一般设置主页
+            }                                    
+
+
+
+
+
+8 部署静态网站
+课堂练习
+    使用yundisk的网站，添加nginx的location配置信息实现以下功能
+    将yundisk解压后放到 /usr/local/nginx目录下
+
+    1 访问地址 http://ip/reg.html             能够看到reg.html
+        location /reg.html {
+            root /usr/local/nginx/yundisk;
+        }
+
+        发现缺少 static 资源，也要添加资源定位
+
+        location /static/ {
+            root yundisk;
+        }
+
+        location的匹配规则
+            将资源的路径跟 location里边每个路径进行匹对，匹配度最高的生效
+            location 资源路径还可以使用 正则表达式
+
+
+    2 访问地址 http://ip/hello/reg.html       能够看到reg.html
+
+        location /hello/reg.html {
+            root yundisk;
+        }
+
+        nginx最终定位资源的路径
+            root + location的路径
+            /usr/local/nginx/yundisk/hello/reg.html
+
+
+
+    3 访问地址 http://ip/upload/              能够看到upload.html
+        因为访问的是一个目录，使用index指定返回哪个文件
+        location /upload/ {
+            root yundisk;
+            index upload.html;   
+        }
+
+
+
+
+
+9 域名和ip
+    ipv4 : 192.168.0.1    4个字节使用点分十进制表示
+    4 个字节的ip unsigned int 
+
+    ipv6 : 
+        因为 GFW 还没做好
+
+
+    域名： www.baidu.com    
+
+
+        一个域名在同一时刻同一地点对应一个IP
+        一个IP是可以对应多个域名
+
+        通过域名换成IP
+
+            1 本地自行换算  ，依赖 hosts文件
+                linux/unix ...   /etc/hosts
+                windows     C:\Windows\System32\drivers\etc\hosts
+            2 DNS 
+                domain name system
+
+                本机发送一个UDP报文 到 dns服务器，服务器返回一个UDP报文 
+
+                前提：
+                    本机已经配置了DNS
+
+
+
+
+10 虚拟主机
+    很多http服务器都支持
+        一个IP进行复用
+        例子：
+            www.baidu.com
+            www.jd.com     都映射到同一个ip ,同一台机器
+
+
+            http 默认端口耗时 80 
+            如何区分客户端访问的baidu还是jd
+
+
+        1 不同的站点部署在不同的端口号
+            www.baidu.com    80       http://www.baidu.com   默认是80
+            www.jd.com       8080     http://www.jd.com:8080   来进行访问
+                用户还需要自己来记住端口号，不合理
+
+
+
+        2 同一IP同一个端口部署不同的站点
+            网络层、控制层 TCP/IP 都没办法做区分 
+            只能在http 协议层做区分 ，确定请求的是baidu还是jd
+
+                http请求头 有一个字段 
+                 Server: www.baidu.com  
+                 用这个字段进行区分
+
+
+    nginx 有一个配置
+        server_name
+
+
+    操作：
+        需求：同一个ip和端口部署不同的站点 ，当浏览器以不同的域名来访问nginx服务器的时候，返回不同网站页面
+            www.itcast1.cn
+                返回 itcast1 页面
+            www.itcast2.cn
+                返回 itcast2 页面
+
+
+        多个站点，使用多个server模块，都监听80端口，设置server_name不一样
+            一个是 www.itcast1.cn
+            另一个 www.itcast2.cn
+
+
+    在客户端的机器上配置hosts
+        192.168.177.170 www.itcast1.cn
+        192.168.177.170 www.itcast2.cn
+
+
+
+
+11 反向代理配置
+
+    192.168.177.172 作为反向代理服务器
+    客户端访问 http://192.168.177.172  可以看到 itcast1 的页面
+
+    实现方式就是通过添加一个location 设置 proxy_pass
+    location / {
+        proxy_pass http://192.168.177.170:10080;
+    }
+
+
+
+12 负载均衡配置
+    
+    负载均衡必须建立在反向代理的基础上，只有实现反向代理
+    才有决定权，去实现负载均衡
+
+        使用nginx的 upstream 服务器群组
+
+        可以定义一组服务器来做为负载均衡的选择
+
+
+        upstream 服务器组名 {    #名字可以随便起，注意声明在 http模块下
+            server ip1:port1;
+            server ip2:port2;
+            ...
+            server unix:/....sock;  #可以是本地套接字
+        }
+
+        如何使用服务器群组
+
+        location / {
+            proxy_pass http://服务器组名;
+        }
+
+
+
+        默认的负载均衡策略是轮询
+
+
+
+    权重与备用
+        设置某台服务器的权重 
+
+        upstream myitcast.cn {                               
+            server 192.168.177.170:10080 weight=9;  #itcast1 
+            server 192.168.177.170:10081 weight=1;  #itcast2 
+        }                                                    
+
+        nginx自动计算权重比 , 90%访问第一台 ，10%的请求访问第二台服务器
+
+
+
+        备用
+            有些服务器是作为备用服务器，只当其他服务器都挂了，才启用
+            使用backup关键字
+        upstream myitcast.cn {                               
+            server 192.168.177.170:10080 ;  #itcast1 
+            server 192.168.177.170:10081 backup;  #itcast2 
+        }   
+
+
+
+
+
