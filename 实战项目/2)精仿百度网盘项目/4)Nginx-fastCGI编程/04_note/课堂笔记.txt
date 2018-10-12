@@ -1,0 +1,520 @@
+1 动态网页和静态网页
+    不是说网页上面会动（有动画）叫动态网页
+
+    每次发起http请求从服务器上面拿资源，服务器每次返回固定的资源，叫静态网页
+    如果服务器会根据一些条件返回不同的内容，叫做动态网页
+
+        静态：
+            nginx 欢迎页面
+
+        动态：
+            百度搜索
+            验证码
+
+
+    nginx 默认只支持静态 
+
+
+2 http协议
+
+    全称 超文本传输协议 hyper text transmit protocal
+    底层使用TCP，传输的数据是明文，是一个明文的协议
+        TCP 上面传输的都是字符串
+
+    安全问题，只要抓包，传输的内容可以看到
+
+    使用HTTPS   http over ssl
+        基本上使用SSL 可以完全安全，要破解要使用N年
+
+    https什么情况下不安全
+        中间人攻击 ，钓鱼
+
+        https的防护就使用SSL证书
+        颁发证书的机构全球就几个
+
+
+
+
+    对于我们编程，都是处理http明文，nginx已经帮我做好了SSL这层
+
+
+
+3 http协议内容：
+    经过TCP三次握手之后
+    客户端就会发起http请求
+    服务端处理完成，返回响应信息
+
+    客户端就会发起http请求
+    服务端处理完成，返回响应信息
+
+
+    客户端就会发起http请求
+    服务端处理完成，返回响应信息
+
+    .....
+    TCP四次挥手
+
+
+    http协议换行符都是 \r\n
+
+    请求
+
+            POST /search HTTP/1.1  
+            Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/vnd.ms-excel, application/vnd.ms-powerpoint,application/msword, application/x-silverlight, application/x-shockwave-flash, */* 
+            Accept-Language: zh-cn  
+            Accept-Encoding: gzip, deflate  
+            User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727; TheWorld)  
+            Host: www.google.cn 
+            Connection: Keep-Alive     
+            Content-Type: application/x-www-form-data-urlencoded
+            Content-Length: 27
+            \r\n
+            hl=zh-CN&source=hp&q=domety 
+
+        请求行 POST /search HTTP/1.1 
+            请求方法 请求资源路径 HTTP版本号
+                常用的http请求方法 （8个）
+                最后常用的是4个  ，刚好对应  增删查改
+                    POST  增
+                    GET   查
+                    PUT   改
+                    DELETE 删
+
+                    restful 的http api设计，4个方法都会用
+                        POST 和 put 允许餐带请求数据
+                        GET 和 DELETE 不允许
+
+                    并不是所有的http方法可以参带请求数据
+
+                更加常用就2个
+                    POST 和 GET
+
+            请求路径
+                去掉 URL http://ip:port 剩余的部分
+
+
+        请求头
+            都是键值对 key : value
+                Accept: 客户端期望得到的数据类型
+                Accept-Language: 客户端期望收到语言 
+                Accept-Encoding: 数据的编码格式 
+                User-Agent:  用户使用的代理（浏览器类型）
+                Host: www.google.cn    请求的域名
+                Connection: Keep-Alive    保持连接   请求一次之后先不要断开tcp连接，保持
+                Content-Type: application/x-www-form-data-urlencoded   请求数据的数据类型
+                Content-Length: 27                                     请求数据的长度（字节）
+
+
+                只有带有请求数据才会有 content-type 和 content-length
+
+        空行(\r\n)
+
+        请求的数据（不一定有）
+
+
+    响应
+        HTTP/1.1 200 OK
+        Server: nginx/1.13.10\r\n
+        Date: Wed, 28 Mar 2018 04:33:29 GMT\r\n
+        Content-Type: text/html; charset=utf8
+        Content-Length: 612
+        Connection: keep-alive
+        Accept-Ranges: bytes
+        \r\n
+        <!DOCTYPE html>
+        .....
+        ....
+
+        状态行 HTTP/1.1 200 OK
+            http版本号 状态码 状态码的含义
+            关于状态码的含义
+                1xx 表示服务器已接收了客户端请求，客户端可继续发送请求    (辅助类)
+                2xx 表示服务器已成功接收到请求并进行处理                (积极的)
+                3xx 表示服务器要求客户端重定向                         （重定向）
+                4xx 表示客户端的请求有非法内容                        (客户端有毒)
+                5xx 表示服务器未能正常处理客户端的请求而出现意外错误      (服务端有毒)
+
+
+        响应头
+            键值对  key : value
+            Server : 服务器的类型 
+            Content-Type  : 响应数据的类型  
+            Content-Length : 响应数据的长度
+
+
+        空行(\r\n)
+        响应的数据
+            主要看请求的是什么数据
+            如果html ,返回的html文本
+            是 jpg ,  返回的是 jpg的二进制内容
+
+
+
+
+
+4 http传参
+    主要看请求方法 
+    GET
+        因为GET不允许携带请求数据（请求的第四部分）
+
+            1 在请求头
+                key: value
+                理应该可以带参数
+                看服务器的支持
+            2 请求行
+                能放的地方 GET /search   HTTP/1.1
+                只能修改 请求资源的路径
+
+                http://ip:port/login.php?user=itcast&passwd=123456
+
+                urlencoded 传参方式
+
+                在 资源路径后面以?开始 ，之后 key=value ，多个键值对中间使用&符号分割
+
+
+                限制：
+                    1 敏感数据暴露在地址栏
+                    2 传递二进制数据
+                        将二进制数据编码成为可见字符
+                        地址栏（请求行）有长度限制 512 ，看服务器
+
+
+    POST
+
+        因为POST可以允许携带请求数据
+
+        传参将参数放置在请求数据这块就可以
+
+
+
+
+5 CGI
+    apache nginx 默认都不支持 动态请求
+
+    支持将一些动态请求发送到另一个进程去处理，最后获取返回结果
+
+    性能瓶颈,fork创建子进程会消耗资源，最终要wait收尸
+    大并发，频繁fork，就会到达瓶颈
+
+    apache 支持 
+
+
+6 FastCGI
+    nginx  不支持CGI，但是支持fastCGI
+
+    性能上解决了频繁fork产生子进程的瓶颈问题
+
+    fastCGI程序是需要fastCGI进程管理器来管理
+
+    有请求来，处理请求，请求处理完成后，常驻在内存
+    以一种性能消耗比较低的方式常驻在内存
+        1 sleep
+        2 阻塞
+
+
+7 spawn-fcgi
+    进程管理器
+
+
+8 nginx spawnFCGI FastCGI三者间如何通信
+
+    nginx 和 spawn-fcgi 的关系，进程间关系
+        通信机制 使用socket 
+
+
+    spawn-fcgi 和 fastcgi程序 父子关系
+
+        通信机制有很多选择
+        可以使用socket
+        使用pipe
+
+
+    
+9 配置与搭建
+
+    fastcgi 源代码安装
+
+        确保 linux 已经安装  apt-get install autoconf autotool libtool
+            古老的项目构造工具 autotool
+            后面cmake 出来，都转cmake
+
+
+        chmod a+x autogen.sh
+        ./autogen.sh
+        会有文件缺失的报错
+        touch NEWS README AUTHORS ChangeLog
+
+        ./configure
+
+        make && sudo make install 
+
+
+
+    spawn-fcgi 的安装
+        ./autogen.sh
+        ./configure
+        make && sudo make install
+        验证
+            有 spawn-fcgi 命令
+
+
+10 部署一个简单的hello echo程序
+    使用spawn-fcgi 命令部署一个程序
+        -f 指定fastCGI程序
+        -a 绑定的ip地址
+        -p 绑定的端口号
+
+    spawn-fcg -f ./echo -a 0.0.0.0 -p 10000
+
+    部署成功，返回进程ID
+
+    nginx 也要做相应的配置
+
+    location /echo {
+        fastcgi_pass 127.0.0.1:10000;
+        include fastcgi.conf;
+    }
+
+
+    1 请求行如何获取
+    2 请求头如何获取
+        都是从环境变量获取
+
+        使用到系统编程的一个全局变量 
+            extern char **environ ；指向一个字符串数组
+            最后以NULL结束
+            for(int i=0 ; environ[i]!=NULL;++i )
+            {
+                printf  ...  environ[i];
+            }
+
+
+        getenv 也是配合 environ来使用
+            获取环境变量某个key对应的value
+
+
+
+        程序一开始 environ 还是指向 linux操作系统的环境变量 (PATH...)
+        当有一个请求过来 FCGI_Accept  函数返回后
+            全局变量 environ 就会指向另一个环境变量的数组
+
+        fastCGI通过替换这个environ将一些参数传递给 程序
+
+
+    3 请求数据如何获取
+        通过标准输入
+        fastCGI进程管理器和 fastCGI程序是父子进程
+        做了一个重定向
+
+    4 如何返回信息给客户端
+        通过标准输出
+
+
+
+11 上传文件的部署
+    部署一个网站，可以上传文件
+
+    location / {                     
+        root   /home/itcast/zyFile;  
+        index  demo.html;            
+    }            
+    #关于上传的处理动作，转到fastCGI处理                    
+    location /upload/UploadAction {  
+        fastcgi_pass 127.0.0.1:10000;
+        include fastcgi.conf;        
+    }                                
+
+
+
+
+12 POST方法提交数据的形式
+
+    text/plain    html默认支持
+        username=itcast
+        phone=12345678
+        email=itcast@itcast.com
+        date=2018-03-30
+        sex=male
+        class=3
+        rule=on
+
+
+
+    application/x-www-form-urlencoded   最常用
+
+        username=itcast&phone=12345678&email=itcast%40itcast.com&date=2018-03-30&sex=male&class=3&rule=on
+
+
+        跟GET方法传参一致 没有问号开头
+
+
+
+
+    application/json        之后除了上传文件使用的格式
+
+        {“name”:”itcast”,”passwd”:”123456”}
+
+
+
+    text/xml
+
+        xml是表达形式最丰富的数据形式,一些很复杂的数据结构会要求使用xml
+
+        xml的解析相比json更加消耗性能
+
+
+
+        <?xml version="1.0" encoding="utf-8"?>
+        <root>
+          <name>itcast</name>
+          <pass>123456</pass>
+        </root>
+
+
+    multipart/form-data 
+        boundary 是客户端根据某些条件生成的一个特殊字符串  ,知识作为分隔符
+            客户端保证bound不会跟 提交的数据重复
+
+        --${bound}
+        Content-Disposition: ... 对这部分数据的描述 ，文件名、文件类型
+        \r\n      --- 空行
+        file1的内容\r\n     --这部分数据的主要内容
+        --${bound}
+        Content-Disposition: form-data; filename="file2"
+        \r\n
+        file2的内容\r\n
+        --${bound}--
+
+
+        案例
+
+        -----------------------------19280834861918399619222920475     bound
+        Content-Disposition: form-data; name="file"; filename="长恨歌_utf-8.txt"
+        Content-Type: text/plain    文件类型是明文
+        \r\n
+        ﻿长恨歌
+        朝代：唐代
+        作者：白居易
+        ....
+        -----------------------------19280834861918399619222920475--
+        Content-Disposition: form-data; name="file"; filename="长恨歌_utf-8.txt"
+        Content-Type: text/plain    文件类型是明文
+        \r\n
+        ......
+        -----------------------------19280834861918399619222920475--
+
+
+
+
+13 上传处理FastCGI程序思路分析
+    程序：
+        输入：multipart数据
+        输出：将multipart文件数据提取出来存到http服务器所在的硬盘上
+
+        -----------------------------19280834861918399619222920475\r\n     bound
+        Content-Disposition: form-data; name="file"; filename="长恨歌_utf-8.txt"
+        Content-Type: text/plain\r\n    文件类型是明文
+        \r\n
+        ﻿长恨歌
+        朝代：唐代
+        作者：白居易
+        ....可能文件里边 有 \0    \r\n
+        -----------------------------19280834861918399619222920475--
+
+
+    1 将标准输入的数据全部读取出来，存到一个数组里边，方便操作
+        char *data = malloc ( content_length)
+
+        fread(stdin...)  将用户数据部分全部提取出来
+
+    2 实现一个函数
+        int read_file(char *data , size_t len,
+            char *out_file_name , char *out_content_type,char **out_ptrBegin, char **out_ptrEnd)
+
+            data 就是用户数据的数组
+            len 就是用户数据的长度
+            out_file_name 传出的文件名
+            out_content_type 传出的文件类型
+
+            out_ptrBegin  传出参数，确定文件数据初始地址
+            out_ptrEnd    传出参数，确定文件数据结束地址
+
+    3 具体函数实现
+
+        1 用一个数组 记住 bound
+            char bound[512]={0}
+            查找第一个 \r\n
+            strstr 来查找，拿到一个结束指针pEnd
+
+            char *strncpy(char *dest, const char *src, size_t n);
+
+            strncpy(bound,data,pEnd-data)
+
+        2 提取filename
+            pStart = strstr(pEnd+2 , "filename=")+10;   //定位到文件名的开始
+            pEnd = strchr(pStart,'"');
+
+            strncpy 将文件名拷贝出来
+
+
+        3 提取  content type
+
+            同上，结束位置是\r\n
+
+        4 找到文件头
+
+            strstr (pEnd , "\r\n\r\n") +4 ;
+
+
+        5 找到文件结束的位置
+
+
+            有两个坑：
+
+            1 能不能用strstr 查找 bound ??
+                不能用 ,因为一些二进制文件可能有 \0 这个字节存在
+                strstr ，遇到\0结束查找
+                memstr ，查找成功也是返回指针
+
+            2 文件的结束位置并不是 并不是找到的 bound
+                文件的内容和最后的bound 中间被添加了 \r\n
+
+                通过memstr 找到bound的位置还要回退2字节
+
+
+    4 将文件写到硬盘上
+
+        int fd open("文件名",O_CRET|O_WRONLY,0664);
+
+
+        write(fd ,out_ptrBegin , out_ptrEnd - out_ptrBegin);
+
+    5 重要验证
+        验证文件一个字节不多，一个字节不少
+
+        md5sum 命令 计算文件的MD5 ， 可以校验文件的完整性
+
+                两个二进制完全一样的文件，MD5值肯定一样
+
+
+
+
+
+
+    编译：
+        gcc xxx.c -lfcgi
+
+        可以直接在命令行上面执行fastCGI程序，如果报so找不到，执行 sudo ldconfig
+
+        之前提，fastCGI是 标准输入输出是被重定向 ？并不是真正意义的重定向
+        知识fastCGI框架将 printf cin cout ... 跟输入输出相关的全部替换掉
+
+
+        以前CGI程序，是真正意义重定向
+
+
+        C++ fastCGI编译
+            g++ echo-cpp.cpp -lfcgi -lfcgi++
+
+
+

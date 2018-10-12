@@ -1,0 +1,37 @@
+@charset "utf-8";
+
+html,body{
+	height: 100%;
+	color: #9AEC4D;
+}
+
+body{
+	/*背景图*/
+	background-image: url(comeIn.jpg);
+	background-size:cover;
+	background-position: center center;
+	margin: 0;
+	padding: 0;
+	/*相对位置*/
+	position: relative;
+}
+
+.container{
+	width: 100%;
+	text-align: center;
+	top: 50%;
+	transform: translateY(-50%);
+	position: absolute;
+	font-size: 24px;
+}
+
+.mybtn{
+	width: 180px;
+	height: 70px;
+	color: blue;
+	background-color: #3FF;
+	border: 3px solder #3FF;
+	border-radius: 10px;
+	padding: 10px 10px;
+	font-size: 20px;
+}

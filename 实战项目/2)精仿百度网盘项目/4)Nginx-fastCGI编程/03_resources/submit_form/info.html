@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- 在H5中，表单类元素有着非常大的改变，功能越来越人性化，就是牛X的意思哈～ -->
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>提交表单</title>
+		<link rel="stylesheet" type="text/css" href="test.css">
+	</head>
+	<body>
+		<div class="container">
+			<!-- 表单form的作用，就是将数据提交到某个页面，方便进一步数据处理。 -->
+			<!-- method，用来指定表单提交数据的方式: post & get -->
+			<!-- post，把数据放在数据体内然后再发给后台，数据不能直接被看到，但是传输数据量大 -->
+			<!-- get，把数据放在URL中，以明文（可看）的方式发送给后台，传输数据量小，不能传输文件类数据 -->
+			<!-- action，用来指定表单提交的目的页面。 -->
+			<form method="post" enctyp="text/plain" action="http://192.168.177.170/echo">
+			<!-- <p>姓名：<input type="text" name="username"></p> -->
+			<!-- 捆绑姓名和输入框，起到说明还能扩大表单选取范围 -->
+			<!-- 虽然这么说，但是老子还是不太明白。。。。。。 -->
+			<!-- input属性还可以加入placeholder占位符，起到提示作用 -->
+			<!-- 表单姓名往往是第一项，从用户体验角度讲直接把光标放在这里，效果会更好，用autofocus属性 -->
+			<p><label>姓名：<input type="text" name="username" placeholder="这位大帝，您贵姓？" autofocus="autofocus"></label></p>
+			<!-- 在H5中，input元素的type属性，还有很多新的类型：tel、email、date，这些属性会优化移动端的体验 -->
+			<!-- required属性：必须填写的选项 -->
+			<p><label>电话：<input type="tel" name="phone" placeholder="我们的妹妹会打给你呦^_^" required="required"></label></p>
+			<p><label>邮箱：<input type="email" name="email" placeholder="输入，有福利~~"></label></p>
+			<p><label>时间：<input type="date" name="date" placeholder="你想让妹妹何时联系你(⊙o⊙)?"></label></p>
+
+			<!-- 同一组radio，具有相同的type、name。 -->
+			 <p>
+			 	<!-- radio有自己的value值：女、男、其他。 -->
+				<!-- 因此label标签独立于input元素外,但是为了表示二者关联，用for属性捆绑在一起。 -->
+			 	<label for="sex">性别：</label>
+			 	<!-- checked属性：当前被选中,默认属性 -->
+			 	<input type="radio" name="sex" value="female" checked="checked">女
+			 	<input type="radio" name="sex" value="male">男
+			 	<input type="radio" name="sex" value="other">其他
+			 </p>
+			 <p>
+			 	<label for="class">请选择课程: </label>
+			 	<!-- 课程，下拉菜单，用select元素。 -->
+			 	<select name="class">
+			 		<!-- selected属性：设置默认选项 -->
+			 		<option value="1">Java</option>
+			 		<option value="2">Python</option>
+			 		<option value="3" selected>C++</option>
+			 		<option value="4">HTML5</option>
+			 		<option value="5">Qt</option>
+			 	</select>
+			 </p>
+			 <p>
+			 	<label><input type="checkbox" name="rule" required>遵守纪律，好好学习，天天向上</label>
+			 </p>
+			 <p align="center">
+			 	<button class="mybtn">劳资要交表啦</button>
+			 </p>
+			</form>
+		</div>
+	</body>
+</html>
