@@ -1,0 +1,8 @@
+################tracker.conf为fdfs tracker配置文件信息
+
+主要需要配置的地方：
+第8行：bind_addr=192.168.31.138 #服务器绑定的ip
+
+第11行：port=22122	#服务器绑定的端口
+
+第22行：base_path=/usr/fastdfs/tracker #日志路径

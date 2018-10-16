@@ -1,0 +1,617 @@
+1 知识点概述
+    基础界面搭建
+    服务器设置
+        表单认证与正则表达式
+    注册功能
+        Qt中操作JSON和发送http请求
+        服务器C语言操作JSON
+        MD5
+
+2 Qt复习
+    掌握窗口布局
+        多少行多少列
+
+        水平布局 QHBoxLayout
+            1行n列
+        垂直布局 QVBoxLayout
+            n行1列
+        网格布局 QGridLayout
+            n行n列
+
+
+    如何使用布局
+
+        如果是写代码实现，就使用上面这三个类
+
+        如果是使用UI界面调整
+            推荐使用 QWidget ，可以灵活切换布局
+
+
+    掌握如何绘制窗口背景图
+        绘图事件处理函数
+
+        paintEvent .
+        只有当窗口需要重新绘制的时候就会触发这个事件处理函数
+        update() // 手动触发绘图事件
+
+
+        在绘图事件处理函数里边使用
+            QPainter 画家
+            QPaintDevice   ,QWidget 窗口类的基类   画布
+            QBrush QPen ....
+
+
+    掌握鼠标事件的使用
+        onMouseMove
+        onMousePressed
+        onMouseReleased
+
+    
+    自定义控件-类的提升
+        1 将多个基础控件进行组合调整做成新控件
+            创建qt 设计师界面类，（带UI）的类
+            ui设计，添加控件的API
+
+        2 修改某个基础控件
+            将按钮做成圆形  ...
+            使用创建新类继承这个控件，实现一些特定重写 ，比如绘图事件处理
+
+
+        将控件在UI文件进行提升为自己实现的控件
+
+    Qt回调机制
+        信号和槽
+
+        自定义信号
+            1 只有声明没有定义
+                定义是Qt工具帮忙实现
+
+            2 void函数
+            3 可有有参数，可以重载
+            4 声明在类的 signals域下
+
+        自定义槽
+
+            1 有声明有实现
+            2 void函数
+            3 可有有参数，可以重载
+            4 声明在类的 slots 域下 
+                qt5 做了扩展 ，可以是任何函数
+
+
+        建立信号和槽的联系
+
+            QObject::connect 
+                1 connect(信号发送者，信号，信号接收者，槽函数)
+                    槽函数是类的非静态成员函数
+
+
+                2 connect(信号发送者，信号，槽函数)
+                    槽函数是类的静态成员函数、全局函数、lambda表达式
+
+
+
+
+
+
+
+                
+3 正则表达式
+    判断某个字符串符合某个规则  (字符串模式匹配)
+
+
+练习:
+    1 以S开头的字符串
+        匹配字符串开始位置
+        ^S
+
+    2 以数字结尾的字符串
+        匹配结尾  $符号表示字符串结束位置
+        匹配数字  [0123456789]  中括号表示匹配内部元素的一次出现
+            [0123456789]$
+            [0-9]$
+            \d$
+
+    3 匹配空字符串(没有任何字符)
+        ^$
+
+
+    4 字符串只包含三个数字
+        ^[0-9][0-9][0-9]$
+        ^\d\d\d$
+        ^\d{3}$
+            {n} 表示前面的单元重复次数
+
+    5 字符串只有3到5个字母
+        字母大小写  [a-zA-Z]   注意两个区间中间不要加任何分隔符
+        ^[a-zA-Z]{3,5}$
+            {n,m}
+                n表示单元最小重复次数，m表示单元最大重复次数
+
+
+    6 匹配不是a-z的任意字符
+        区间取反
+            [^a-z]
+                中括号内第一个字符是^号，表示区间取反
+                ^号放在中括号内和中括号外是不同意义
+
+
+
+    7 字符串有0到1个数字或者字母或者下划线
+        [0-9a-zA-Z_] = \w
+        ^\w{0,1}$
+        ^\w?$
+            ?表示前面的单元重复0到1次
+
+
+    8 字符串有1个或多个空白符号(\t\n\r等)
+        \s = [ \f\n\r\t\v]
+        ^\s+$
+            +表示前面的单元重复1次或n次
+        ^\s{1,}$
+            {1,}等同+
+
+
+
+    9 字符串有0个或者若干个任意字符(除了\n)
+        除了\n 可以使用 . 表示
+            ^.*$
+                *表示前面的元素重复0-n次
+
+
+
+        ?   0-1
+        +   1-n
+        *   0-n
+
+
+
+
+    10 匹配0或任意多组ABC，比如ABC，ABCABCABC
+        ^ABC*$
+        要讲ABC做成一个独立的单元
+
+        ^(ABC)*$
+
+
+    11 字符串要么是ABC，要么是123
+        选择关系使用或 | 
+
+        ^ABC|123$ 
+            要么匹配ABC开头的字符串
+            要么匹配123结束的字符串
+
+
+        ^ABC$|^123$
+        ^(ABC|123)$
+            竖线的选择范围，是左右两端的正则，如果有小括号，受限于小括号内做选择
+
+
+    12 字符串只有一个点号
+        ^\.$
+
+        转义：都是使用\
+            1 将特殊字符转为普通字符
+                \? \. \+ 
+
+            2 将普通字符转为特殊字符
+                \r \n 
+
+
+    13 匹配十进制3位整数
+
+        100-999
+            [1-9][0-9]{2}
+
+        匹配十进制 0-999   ?
+        [0-9]{1,3}   
+            001 ?
+            010 ?
+
+        要分段
+            一位数
+                [0-9]
+            两位数
+                10-99
+                [1-9][0-9]
+            三位数
+                [1-9][0-9]{2}
+
+
+            [0-9]|[1-9][0-9]|[1-9][0-9]{2}
+
+            ^([0-9]|[1-9][0-9]{1,2})$
+
+
+
+    14 匹配0-255的整数   指定ip地址
+        分段
+            一位数
+                [0-9]
+            两位数
+                10-99
+                [1-9][0-9]
+            三位数
+                100-255还要继续分段
+                    100-199
+                        1[0-9]{2}
+
+                    200
+                        200-249
+                        2[0-4][0-9]
+
+                    250以上
+                        250-255
+                        25[0-5]
+
+        ^([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$
+
+
+        匹配端口号 0-65535
+
+
+
+4 qt中使用正则表达式来验证表单
+    #include <QRegExp>
+
+    QRegExp reg("正则表达式的字符串");
+
+    reg.exactMatch("要进行比较的字符串")
+        完全匹配，返回true 
+        整个正则都匹配上了
+            注意这种匹配会自动帮你加上 ^$
+
+            比如正则是 123   ——> ^123$
+            字符串也是123
+            叫做完全匹配 
+
+    reg.indexIn("要匹配的字符串")
+        字符串有一部分符合正则
+
+        正则是 123
+        正文： 123456
+
+        返回值是第一次匹配到的位置，字符串中的位置
+            如果>=0 表示匹配到，
+            否则没有匹配
+
+
+
+
+5 Qt中使用http协议通讯
+    qmake 
+        QT += network
+
+    QNetworkAccessManager类
+        单例
+
+        QNetworkReply *get(const QNetworkRequest &request);
+            get方法不带用户数据
+        QNetworkReply *post(const QNetworkRequest &request, QIODevice *data)
+            data就是用户数据   ，比如 QFile 是继承自QIODevice
+
+        QNetworkReply *post(const QNetworkRequest &request, const QByteArray &data)
+            常用，发送一段字节数组
+
+        QNetworkReply *post(const QNetworkRequest &request, QHttpMultiPart *multiPart)
+            发送multipart数据，还要额外去构造multipart对象
+
+
+
+        以上方法都是异步，调用完成之后，函数马上返回（数据可能还没发出去）
+
+
+
+    QNetworkRequest类
+        控制http请求行和请求头
+
+        设置请求头某些字段
+
+        req.setHeader(key,value);
+
+
+
+    QNetworkReply类
+
+        信号
+            要当数据请求结束之后，拿到数据响应才可以读数据
+            void QNetworkReply::finished()  当数据拿到或者出错的时候就可以开始读取
+
+            出错判断：
+                1 服务器没连上(网络错误)
+                2 http 错误 (4xx 5xx 错误码)
+
+                QNetworkReply::NetworkError error() const
+                最终获取的错误是否为 QNetworkReply::NoError ,其他是出错的情况
+
+
+            读取数据 reply->readAll()   返回值是 QByteArray
+
+
+        释放
+            最终reply对象需要我们延时释放
+            rpl->deleteLater();
+
+
+
+
+
+http小案例
+    qt发送get请求，访问www.baidu.com，拿到数据显示出来
+    qt发送post请求访问fastCGI程序echo
+
+
+
+
+7 qt操作json
+    {
+        "key":"value",
+        "key":123,
+        "key":null,
+        "obj":{
+            ....
+        }
+    }
+
+    [
+        "a",
+        "b"
+    ]
+
+
+    QJsonObject
+        QJsonObject obj;
+        obj.insert("key",value);
+
+        另一种形式构造json对象
+        QMap<QString,QVariant> obj2;
+        obj2.insert("key",value);
+        
+    QJsonArray
+        QJsonArray arr;
+        arr.append(mem1);
+        arr.append(mem2);
+        
+    QJsonDocument
+        对QJson对象解析或者解析字符串
+
+        QJsonDocument doc(obj);
+        QJsonDocument doc2 = QJsonDocument::fromVariant(obj2);
+        QJsonDocument doc3 = QJsonDocument::fromJson(json2.toUtf8(),&error)
+        做错误判断，判断有没有解析错误
+        if(error.error!=QJsonParseError::NoError)
+        {
+            qDebug()<<"解析错误："<<error.errorString();
+            return;
+        }
+
+
+CJSON的使用  C语言
+    创建json 
+    解析JSON  （三步）
+
+8 rapidjson 的使用 C++
+    #include "rapidjson/writer.h"        
+    #include "rapidjson/stringbuffer.h"  
+    #include "rapidjson/document.h"      
+    #include "rapidjson/error/en.h"      
+    using namespace rapidjson; 
+
+    解析：
+        rapidjson::Document document;
+        document.Pars("json字符串")
+        解析判断错误
+        if(document.HasParseError())
+        {
+            出错处理
+        }
+        获取json里边某个字段
+            document["name"].GetString()
+
+
+
+    序列化：
+        StringBuffer s;                                                                     
+        Writer<StringBuffer> writer(s);                                                     
+                                                                                            
+        writer.StartObject();               // 写一个 {                                     
+        writer.Key("hello");                // output a key,                                
+        writer.String("world");             // follow by a value.                                                                                                                                                       
+        writer.Key("a");                                                                    
+        writer.StartArray();                // 写一个 [                                     
+        for (unsigned i = 0; i < 4; i++)                                                    
+            writer.Uint(i);                 // all values are elements of the array.        
+        writer.EndArray();                  // 写一个 ]                                     
+        writer.EndObject();                 //写一个 }                                      
+                                                                                            
+         
+        cout << s.GetString() << endl;                                                      
+
+
+
+9 注册功能实现思路
+    
+    客户端：
+        1 验证用户输入的信息
+            使用正则
+
+        2 构造json
+            类似
+            {
+                "name":"itcast",
+                "passwd":"123456",
+                "nickName":"itcast"
+                ....
+            }
+            post 到服务器 fastCGI
+
+            http://ip:port/reg 
+
+        3 收到服务端的响应
+            {
+                "code":0
+            }
+
+            QMessageBox
+
+            如果code是成功，提示用户注册成功，跳到登录界面
+            如果code是用户已经存在，提示用户已经存在
+            其他错误也提示一下出错
+
+
+
+    服务端：
+        在register_cgi.cpp 实现 post方法处理
+        1 解析json
+            有错判错
+
+            拿到用户传递过来的数据
+
+        2 验证用户是否存已经存在
+
+            如果存在同名的 name nickname
+            告诉客户端用户已经存在
+            返回  cout
+            {
+                "code":1
+            }
+
+        3 用户还没有被注册
+            执行sql插入一条数据 user表
+
+            insert into user(name,nickname,password,phone,email,createtime)
+                values(......,now())
+
+            返回成功的结果
+            {
+                code:0
+            }
+
+
+
+        要不要使用事务？保证原子性
+
+            涉及到读完再写，防止脏读，加事务
+
+            客户端是执行 set autocommit=0 ;关闭自动提交
+            变为手动提交，相当于打开事务
+            commit | rollback
+
+
+关于密码
+    密码以明文的形式 存储在 数据库中，DBA 可以看得到
+
+
+
+
+MD5哈希
+    只要数据的二进制内容完全一致，那么哈希算出来的值就肯定一样，反之不一定
+
+    不可逆 
+        从一段数据算出一个MD5 ，不能再从MD5 算出原来的数据
+            1t数据 ——>16 字节
+
+
+    MD5不是绝对安全
+        通过多层的哈希计算，将数据破解难度提高
+        MD5(SHA1(MD5(data)))
+
+
+
+    MD5 计算结果 是16字节
+    16字节转化为16进制字符串输出
+        每个字节编程两个字符，最后就是一个32字符长度的字符串
+
+
+
+    qt如何使用MD5
+    #include <QCryptographicHash>
+    //声明一个对象
+    QCryptographicHash md5(QCryptographicHash::Md5);
+
+    //添加要计算的数据
+    md5.addData(data);
+    md5.addData(data);
+    md5.addData(data);
+    md5.addData(data);
+
+    //获取md5结果
+    QByteArray md5Array = md5.result();
+    //最终转化为16进制字符串
+    md5Array.toHex().data();
+
+
+
+
+
+    服务端计算MD5
+
+
+    使用一个已经封装好的类
+    MD5Maker
+
+        MD5Maker mk (data,len);
+        mk.getDigestHexString()
+            获取MD5的字符串
+
+
+
+
+服务器操作mysql
+    使用C的方式操作数据库
+    #include <mysql.h>
+
+    使用C++的方式操作  
+    sudo apt install libmysqlcppconn-dev
+
+
+    #include <cppconn/driver.h>            
+    #include <cppconn/exception.h>         
+    #include <cppconn/resultset.h>         
+    #include <cppconn/statement.h>         
+    #include <cppconn/prepared_statement.h>
+
+
+    1 获取mysql驱动
+
+
+        sql::Driver * driver = ::get_driver_instance(); 
+
+
+    2 建立连接
+        sql::Connection *conn = driver->connect("tcp://127.0.0.1","root","密码");
+
+        选择数据库
+
+        conn->setSchema("cloud_disk");  //use cloud_disk
+
+
+        执行sql语句
+            sql::Statement *stmt = conn->createStatement();
+            sql::ResultSet *res = stmt->executeQuery("select name , id");
+
+            如果是要执行 增删改
+            stmt->executeUpdate("insert ....") ; 返回值影响多少行
+            如果是insert，要判断值是否为1，确定插入成功
+
+
+        结果集的查看
+            while(res->next())
+            {
+                std::string name = res->getString("name");
+            }
+
+
+        每个指针都要手动delete
+
+            delete res;
+            delete smtm;
+            delete conn;
+
+
+
+
+
+
+
+

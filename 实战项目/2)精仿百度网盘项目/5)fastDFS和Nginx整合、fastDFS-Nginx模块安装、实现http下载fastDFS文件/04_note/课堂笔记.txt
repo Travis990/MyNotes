@@ -1,0 +1,615 @@
+
+1 上传文件思路梳理和文件下载的流程
+   最终要将文件存储到fastDFS上
+
+   业务需求：
+      上传
+      1 用户 A 上传一个文件 1.txt
+      2 1.txt会被fastCGI处理，存到http服务器所在机子的硬盘上
+      3 将文件上传到fastDFS ，获取一个 fileID  
+      4 将文件ID和用户的文件名做一个映射  ，存到mysql
+
+
+      下载流程
+      1 用户A 下载一个文件 1.txt
+      2 请求会被fastCGI做处理 ,根据文件名从mysql查询出文件ID
+      3 根据文件ID从fastDFS获取文件
+      4 将文件返回给用户
+
+
+
+2 整合nginx和fastDFS
+
+   下载文件的时候，fastCGi只通过mysql查询出文件名对应的fileID，并且构造一个url 返回给客户端
+
+      url   :   http://ip:port/goup1/M00/00/00/xxxxxxxx.txt
+
+   客户端拿到URL之后发起请求，从storage服务器下载文件
+
+   好处，释放fastCGI的性能，支持更高并发
+
+
+
+   注意：
+      每台storage都要安装一个nginx做整合
+      因为条件限制，nginx+fastCGI + fastDFS全在一台机器
+
+
+
+   安装
+      将fastDFS nginx 模块代码解压后，
+      进入nginx的源代码目录，重新执行配置 configure
+      ./configure 
+         --with-pcre=../pcre-8.42 
+         --with-zlib=../zlib-1.2.11 
+         --with-openssl=../openssl-1.0.2o 
+         --add-module=../fastdfs-nginx-module-85347be190dcfe9d46bd67176f84afaa32718142/src
+
+      最后要一个参数，添加一个模块 ，指定到src目录
+
+      配置成功 可以 看到  + ngx_http_fastdfs_module was configured
+
+      重新编译nginx
+         make && sudo make install
+
+
+      验证，重新跑起nginx，没有worker进程
+
+      查错的方式，看log  /usr/local/nginx/log/error.log
+
+         1 缺少 /etc/fdfs/mod_fastdfs.conf 文件
+            从 nginx fastdfs 模块的src目录中可以找到，手动拷贝到/etc/fdfs
+
+         2 缺少http.conf mime.types 文件
+            从 fastdfs源代码目录（第一天的代码） conf/  将两个文件手动拷贝到/etc/fdfs
+
+
+         sudo nginx -s reload 重新加载配置
+
+
+3 nginx fastDFS 模块配置
+   
+   大部分配置跟 storage.conf 配置一致
+
+   nginx启动还有错误，配置文件还没有修改好，手动修改
+   修改 /etc/fdfs/mod_fastdfs.conf文件
+
+
+   base_path=/tmp   存储数据以及日志的目录
+
+   load_fdfs_parameters_from_tracker=true
+      nginx模块会自动从tracker加载一些配置信息
+
+   tracker_server=127.0.0.1:22122   #tracker服务器的ip和端口号
+
+
+   storage_server_port=23000
+      指本地storage服务器的端口号
+
+
+   group_name=group1   
+      本地storage服务器的组名
+
+   # if the url / uri including the group name                                     
+   # set to false when uri like /M00/00/00/xxx                                     
+   # set to true when uri like ${group_name}/M00/00/00/xxx, such as group1/M00/xxx 
+   # default value is false                                                        
+   url_have_group_name = true   
+
+
+      url要不要包含组名  
+         方便查问题，看到URL就能够确定哪台机器，最好把组名也打开                                                
+
+      nginx支持使用http下载storage文件
+         http://ip:port/M00/00/00/xxxxxxx.txt 
+         http://ip:port/group1/M00/00/00/xxxxxxx.txt  
+
+
+   以下两个参数要跟storage.conf一致
+   # path(disk or mount point) count, default value is 1                          
+   # must same as storage.conf                                                    
+   store_path_count=1                                                             
+                                                                                  
+   # store_path#, based 0, if store_path0 not exists, it's value is base_path     
+   # the paths must be exist                                                      
+   # must same as storage.conf                                                    
+   store_path0=/home/yuqing/fastdfs                                               
+   #store_path1=/home/yuqing/fastdfs1                                             
+
+
+
+
+
+   最后nginx要修改配置，添加location
+   location /group1/ {                 
+       ngx_fastdfs_module;             
+   }                                   
+
+
+   验证
+      sudo nginx -s reload 
+      可以看到fastdfs模块启动
+         ngx_http_fastdfs_set pid=69511
+
+
+      最终使用http访问nginx，可以下载文件
+         http://192.168.177.170/group1/M00/00/00/fwAAAVvCtkOAWp0UAAADBQai3XY01020.c
+
+
+
+
+
+   选项补充：
+      # response mode when the file not exist in the local file system               
+      ## proxy: get the content from other storage server, then send to client       
+      ## redirect: redirect to the original storage server (HTTP Header is Location) 
+      response_mode=proxy                                                            
+
+         当客户端想要下载的文件不存在当前的storage服务器
+            1 文件本来就不存在于当前fastDFS系统
+            2 文件存在当前fastDFS系统，但是不在当前storage服务器
+               1 文件不在当前组
+                  文件存在group2 但是当前服务器是group1
+
+               2 文件在当前组
+                  文件还没来得及备份过来
+
+
+
+
+         代理：当前nginx帮忙代理到另一台机器上面去下载文件并且返回
+         重定向：叫客户端到另一台storage服务器上面去下载文件
+
+
+
+
+
+      group_count = 0   
+      一台服务器可以同时支持多个组
+         一台机器启动了多个storage服务进程，每个进程的存储路径不一样
+         一个nginx同时帮多个storage进程做服务
+
+
+      如果有多个组的情况下，以下的选项要根据当前机器有多少个组的storage进行配置
+
+
+
+
+
+
+
+
+
+
+4 数据库设计
+
+
+
+
+   编程范式：
+      将简单问题复杂化
+
+
+数据库设计的范式 
+
+ * 第一范式（1NF）
+   所谓第一范式（1NF）是指在关系模型中，对域添加的一个规范要求，所有的域都应该是原子性的，即数据库表的每一列都是不可分割的原子数据项，
+   而不能是集合，数组，记录等非原子数据项。即实体中的某个属性有多个值时，必须拆分为不同的属性。
+   如下数据不符合1NF，部门地址和部门电话放在同一列，需要拆分
+   | name   | job  | deptno | dept_name  | dept_loc_tel      |
+   |--------+------+--------+------------+-------------------|
+   | Zhang3 | SAL  |     10 | Accounting | Beijing , 1111111 |      存 {dept:Beijing,tel:1111111}
+   | Li4    | MGR  |     20 | SALES      | Shanghai, 2222222 |
+   | Zhang3 | HR   |     30 | SUPPORT    | Shenzhen, 3333333 |
+   | Wang5  | BOSS |     10 | Accounting | Beijing , 1111111 |
+
+   最后变成以下表格
+   | name   | job  | deptno | dept_name  | dept_loc | dept_tel |
+   +--------+------+--------+------------+----------+----------|
+   | Zhang3 | SAL  |     10 | Accounting | Beijing  | 1111111  |
+   | Li4    | MGR  |     20 | SALES      | Shanghai | 2222222  |
+   | Zhang3 | HR   |     30 | SUPPORT    | Shenzhen | 3333333  |
+   | Wang5  | BOSS |     10 | Accounting | Beijing  | 1111111  |
+
+
+   总结：
+      每列不可再切割，目前数据库设计都符合
+
+
+
+
+
+
+
+
+ * 第二范式（2NF）
+   在1NF的基础上，非码属性必须完全依赖于候选码（在1NF基础上消除非主属性对主码的部分函数依赖）
+   第二范式（2NF）是在第一范式（1NF）的基础上建立起来的，即满足第二范式（2NF）必须先满足第一范式（1NF）。
+   第二范式（2NF）要求数据库表中的每个实例或记录必须可以被唯一地区分。选取一个能区分每个实体的属性或属性组，作为实体的唯一标识。
+   说白了就是必须要有一个能够唯一标识某一列的属性，比如说用户的id，身份证号，只要确定了这个id，那么其他列的值我都可以确定
+   以上表格不能唯一区分每一行数据
+   | id | name   | job  | deptno | dept_name  | dept_loc | dept_tel |
+   |----+--------+------+--------+------------+----------+----------|
+   |  1 | Zhang3 | SAL  |     10 | Accounting | Beijing  | 1111111  |
+   |  2 | Li4    | MGR  |     20 | SALES      | Shanghai | 2222222  |
+   |  3 | Zhang3 | HR   |     30 | SUPPORT    | Shenzhen | 3333333  |
+   |  4 | Wang5  | BOSS |     10 | Accounting | Beijing  | 1111111  |
+
+
+
+   非码属性，实现上就是没有 unique 约束的列（属性）
+
+   候选码 ： 有 unique 约束的列
+
+   总结：
+      每个表必须要有主键
+
+
+
+
+
+
+
+ * 第三范式（3NF）
+   在2NF基础上，任何非主属性不依赖于其它非主属性（在2NF基础上消除传递依赖）
+   第三范式（3NF）是第二范式（2NF）的一个子集，即满足第三范式（3NF）必须满足第二范式（2NF）。
+   简而言之，第三范式（3NF）要求一个关系中不包含已在其它关系已包含的非主关键字信息。
+   说白了就是，非主键列只能通过主键来确定
+   以上表格数据，部门名称、部门地址和部门电话依赖于部门编号，并没有直接依赖于主键ID
+   那么就将表格拆分为两个表
+   
+   emp表
+   | id | name   | job  | deptno |
+   |----+--------+------+--------+
+   |  1 | Zhang3 | SAL  |     10 |
+   |  2 | Li4    | MGR  |     20 |
+   |  3 | Zhang3 | HR   |     30 |
+   |  4 | Wang5  | BOSS |     10 |
+   dept表
+   | deptno | dept_name  | dept_loc | dept_tel |
+   |--------+------------+----------+----------|
+   |     10 | Accounting | Beijing  |  1111111 |
+   |     20 | SALES      | Shanghai |  2222222 |
+   |     30 | SUPPORT    | Shenzhen |  3333333 |
+
+   非主键列只能通过主键来确定
+
+
+
+
+   BCNF范式，在第三范式基础上再建立
+   4NF ，
+      存在于书本上
+
+
+
+   数据库设计能够满足3NF就可以了
+
+
+
+
+
+
+实体对象关系
+
+学校数据系统，要录入学生、老师、班级、教室、学生在用电脑的信息
+
+   1 抽实体
+      类似面向对象的抽类的定义
+         学生
+         老师
+         班级
+         教室
+         电脑
+
+         5张表
+
+
+
+   2 确定数量关系
+      1:1      1:1
+      1:多     1:n
+      多对多    n:m
+
+
+
+ * 1:1
+   1对1关系的实体，我们可以将他们合成一个表，也可以分开两个表
+   分开
+   student表，里边添加上computerid
+   | sid | sname  |    phone | computer_id |
+   |-----+--------+----------+-------------|
+   |   1 | zhang3 | 12345678 |           1 |
+   computer表
+   | id | computer_sign | computer_type |   computer_mac |
+   |----+---------------+---------------+----------------|
+   |  1 | MacBook       | Laptop        | 00:00:00:00:00 |
+
+   
+   合在一个表的形式
+   | id | sname  |    phone | computer_sign | computer_type |   computer_mac |
+   |----+--------+----------+---------------+---------------+----------------|
+   |  1 | zhang3 | 12345678 | MacBook       | Laptop        | 00:00:00:00:00 |
+   明显合在一起更加方便操作
+
+
+   所以1:1都合在一张表
+
+
+
+
+ * 1:N
+   查询学生在哪个班级
+      select class_id,class_name from student s ,class c where s.class_id = c.cid  ...
+   查询班级有哪些学生
+
+
+   班级表
+   class
+   | cid | class_name  | student_count |
+   |-----+-------------+---------------|
+   |   1 | C++TopClass |            50 |
+ 
+   student表里边记录班级id
+   | sid | sname  |    phone | class_id |
+   |-----+--------+----------+----------|
+   |   1 | zhang3 | 12345678 |        1 |
+   1:N的关系，在较多的实体的表中添加id指向较少的实体
+   这里就是学生表中添加班级id
+
+
+
+
+
+ * N:N
+
+   查询某个老师在哪些班级授课
+      select ... from teacher_class where tid=1
+   查询某个班级有哪些老师来授课
+
+
+   因为N对N比较复杂，这时候需要另外创建一张表
+   teacher 表
+   | tid | tname    |   phone | email            |
+   |-----+----------+---------+------------------|
+   |   1 | Mr.Li    | 2345678 | li@itcast.com    |
+   |   2 | Mr.Wang  | 3451351 | wang@itcast.com  |
+   |   3 | Mr.Zhang | 8185714 | zhang@itcast.com |
+   
+   班级表
+   | cid | class_name  | student_count |
+   |-----+-------------+---------------|
+   |   1 | C++_No.1    |            50 |
+   |   2 | Python_No.1 |            60 |
+ 
+
+   表示他们两者的关系的表
+   teacher_class表
+   | tid | cid |
+   |-----+-----|
+   |   1 |   1 |
+   |   1 |   2 |
+   |   2 |   2 |
+   |   3 |   1 |
+
+
+
+   画ER图  entity relationship   实体关系图
+
+
+
+
+分布式云盘的需求
+** 数据需求
+ * 注册
+   用户能够注册，注册要记录用户的信息有用户名、密码、昵称、电话号码、电子邮箱
+ * 登录
+   用户通过用户名和密码进行登录
+ * 文件操作
+   * 上传
+     已经登录的用户能够上传文件
+   * 查看文件
+     已经登录的用户能够看到属于自己的文件
+   * 删除文件
+     已经登录的用户可以删除属于自己的文件
+   * 共享文件
+     用户可以共享文件给其他用户
+     同一个文件可以被多个用户拥有
+
+
+
+
+   1 抽实体
+
+      用户
+      文件
+
+
+   2 定关系
+      n:m
+
+
+      三张表
+         用户表
+         文件表
+         用户文件关系表
+
+
+   user
+   file_info
+   user_file_list
+      文件名放到类 user_file_list
+
+      同一个文件，二进制相同，对于两个用户来说，文件名不一样
+         A用户叫1.txt
+         B用户叫2.txt    但是两个文件是同一个文件（二进制相同)
+
+
+
+
+   sql文件的执行
+      1 使用mysql 客户端 登录mysql，之后使用 source 文件名 直接加载某个sql文件并执行
+
+      2 mysql -uroot -p密码 < sql文件名
+
+
+
+
+5 云盘服务器项目框架   
+   ./download_deps.sh 
+      下载一些依赖库
+         rapidjson
+         libmysqlcppconn-dev    C++的mysql库
+
+
+   cmake . && make    #编译项目
+
+
+
+
+   目录讲解
+      bin_cgi 放置fastCGI程序的一个目录
+         注册    register
+         登录    login
+         上传    upload
+         文件列表 myfiles
+         秒传     md5
+         文件相关操作  dealfile
+         共享文件相关操作  dealsharefile
+         共享文件列表  sharefiles
+
+         测试的fastCGI   testFastCGIApplication
+
+         微服务 ,将一个大的云盘服务拆分成很多细小的服务
+
+      conf 配置文件存储目录
+         将一些程序的配置放置在这里
+         fastDFS的配置文件（目前没有使用）
+            client.conf
+            storage.conf
+            tracker.conf
+
+         redis.conf   redis启动的时候加载这个配置
+         nginx.conf   nginx的配置
+            通过脚本来启动项目，这些文件会被加载
+
+
+         cfg.json  项目的一些重要配置
+            redis 的服务器ip端口
+            mysql 对应ip端口和用户密码
+
+            fastdfs 客户端配置文件的加载路径
+
+
+            web_server和storage_web_server
+               配置成当前ubuntu虚拟机的ip 地址和80端口就行
+
+
+      include
+      common 
+         将云盘用到的一些通用的逻辑代码抽离出来
+         成为一些.h文件和.cpp文件
+
+
+
+      dependencies 
+         依赖库放置的路径
+
+
+      lib 
+         编译项目产生的一些库 
+
+
+      src_cgi
+         主战场
+         编写fastCGI代码
+         对应 bin_cgi里边的fastCGI程序都有一个cpp文件
+
+         目前都是空实现
+
+      test
+         测试用的fastCGI程序
+
+
+
+   项目的启动
+      都是用脚本
+      fastdfs.sh
+         fastdfs相关脚本，启动关闭fastdfs服务
+
+      redis.sh
+         redis服务启动关闭的操作
+
+
+      nginx.sh
+         nginx启动关闭的操作
+
+
+      fcgi.sh
+         常用，重新部署fastcgi程序
+
+         kill掉已经部署的fastCGI程序
+
+         重新spawn
+
+
+
+
+
+      start.sh 总启动脚本
+         调用另外几个脚本来完成项目的启动
+         1 将nginx的配置文件进行备份，到nginx.conf.old
+         2 将项目目录的/conf/nginx.conf拷贝到/usr/local/nginx/conf
+
+         3 fastdfs重启
+         4 fastCGI重启
+         5 nginx重启
+         6 redis重启
+            redis使用的配置是项目目录中conf/redis.conf
+
+
+
+6 makefile
+   对于大项目，makefile手写比较费力
+
+   使用一些工具来自动产生makefile
+      autotool  
+         ./configure
+
+
+      cmake
+         cmake . 
+
+
+7 cmake
+   编写项目配置文件 CMakeLists.txt
+
+   编译一个可执行程序
+      add_executable(可执行程序的名字  用来编译的文件 ....)
+      add_executable(a.out  main.cpp a.cpp b.cpp ....)
+
+   添加静态库或者添加动态库
+      add_library(生成的库名  STATIC|SHARED a.c b.c ....)
+      最终生成的文件是
+         lib库名.a|so
+
+   将可执行程序连接到某个库
+      target_link_libraries(可执行程序 lib1 lib2 ....)
+
+   添加头文件搜索路径
+      include_directories(路径1 路径2 .....)
+
+   添加链接库搜索路径
+      link_directories(路径1 路径2 .....)
+
+
+
+   设置变量
+      set(变量名  成员1 成员2 .....)
+      使用变量
+      ${变量名}
+
+
+
+
+

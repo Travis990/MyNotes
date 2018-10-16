@@ -1,0 +1,6 @@
+################client.conf为fdfs客户端配置文件信息
+
+主要需要配置的地方：
+第10行：base_path=/usr/fastdfs/client #用户client存放日志，此日志必须存在
+
+第14行：tracker_server=192.168.31.138:22122 #指定tracker服务器ip和端口，不能是127.0.0.1

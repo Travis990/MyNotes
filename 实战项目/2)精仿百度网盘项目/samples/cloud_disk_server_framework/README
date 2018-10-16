@@ -1,0 +1,19 @@
+服务器部署步骤:
+    1. 执行./download_deps.sh去下载依赖库(需要提前安装git cmake)
+    2. 确保已经安安装了FastDFS、redis、mysql、nginx+FastDFS模块
+        FastDFS和nginx可以使用源代码安装
+        redis可以使用源代码或者apt安装
+        mysql可以使用apt等包工具安装
+    3. cmake . && make 
+    4. 修改cfg.json中的相关数据
+    5. 配置好fastDFS, 保证已经可以正常使用
+    6. 修改conf目录下的nginx.conf配置文件，改为你本地环境相应的FastDFS模块配置
+        location /group1/M00{
+            root /home/luffy/fastDFS/storage/data;
+            ngx_fastdfs_module;
+        }
+
+        找到该配置项, 需要修改root对应的路径, 修改为自己fastDFS Storage的数据存储目录
+        该文件最终会被拷贝到nginx默认的配置文件目录中: /usr/local/nginx/conf
+    6. 执行脚本文件start.sh
+        ./start.sh

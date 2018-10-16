@@ -1,0 +1,23 @@
+-- 创建一个名称为car的数据库。
+create database car;
+
+-- 删除数据库car
+-- drop database car;
+
+-- 使用数据库 car
+use car;
+
+-- 创建表
+create table brand (id int primary key auto_increment, factory varchar(255), name varchar(255), price int, sum int, sell int, last int);
+
+-- 删除brand表
+-- drop table brand;
+
+-- 插入数据
+insert into brand(factory,name,price,sum, sell, last) values('一汽大众', '捷达',   10, 80, 4, 76);
+insert into brand(factory,name,price,sum, sell, last) values('一汽大众', '奔驰',   83, 40, 6, 34);
+insert into brand(factory,name,price,sum, sell, last) values('二汽神龙', '毕加索', 39, 50, 6, 44);
+insert into brand(factory,name,price,sum, sell, last) values('二汽神龙', '富康',   28, 60, 5, 55);
+insert into brand(factory,name,price,sum, sell, last) values('二汽神龙', '标致307',27, 70, 4, 66);
+insert into brand(factory,name,price,sum, sell, last) values('上海大众', '桑塔纳', 25, 75, 2, 73);
+insert into brand(factory,name,price,sum, sell, last) values('上海大众', '帕萨特', 27, 65, 10, 55);

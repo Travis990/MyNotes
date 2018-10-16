@@ -1,0 +1,104 @@
+
+//====================>下载榜redis操作：
+
+用户分享    -------------->   分享列表
+取消分享    -------------->
+删除文件    -------------->
+下载        -------------->
+
+分享文件如何确定唯一文件：md5+文件名
+
+
+使用有序集合实现：1)可以去重复 2)可以删除指定元素 3)自动排好序
+
+1、用户分享某个文件时，集合增加一个记录
+	ZADD key score member [score member ...]
+	
+2、取消分享、删除文件时，集合删除该记录
+	ZREM key member [member ...]
+	
+3、查询，由大---->小
+	ZREVRANGE key start stop [WITHSCORES]
+	
+4、下载一次，+1
+	ZINCRBY key increment member
+	
+5、获取元素范围
+	ZLEXCOUNT key min max  //分数范围
+	
+	ZLEXCOUNT myzset - + 获取所有
+	
+6、返回key的有序集元素个数
+	ZCARD key
+	
+7、获取某个成员的分数
+	ZSCORE key member
+	
+8、判断某个元素是否存在
+	zlexcount zset [member [member 存在返回1，不存在返回0
+
+	
+元素对应关系
+hash_filename	member ---->  文件名
+
+
+流程：元素名字（md5+文件名）
+	1、用户分享某个文件
+		a)先判断此文件是否已经分享，判断集合有没有这个文件，如果有，说明别人已经分享此文件，中断操作(redis操作)
+		b)如果集合没有此元素，可能因为redis中没有记录，再从mysql中查询，如果mysql也没有，说明真没有(mysql操作)
+		c)如果mysql有记录，而redis没有记录，说明redis没有保存此文件，redis保存此文件信息后，再中断操作(redis操作)
+		d)如果此文件没有被分享，mysql保存一份持久化操作(mysql操作)
+		e)redis集合中增加一个元素(redis操作)
+		f)redis对应的hash也需要变化 (redis操作)
+		
+	2、删除文件
+		a)先判断此文件是否已经分享
+		b)判断集合有没有这个文件，如果有，说明别人已经分享此文件(redis操作)
+		c)如果集合没有此元素，可能因为redis中没有记录，再从mysql中查询，如果mysql也没有，说明真没有(mysql操作)
+		d)如果mysql有记录，而redis没有记录，那么分享文件处理只需要处理mysql (mysql操作)
+		e)如果redis有记录，mysql和redis都需要处理，删除相关记录
+		
+	3、取消分享
+		a) mysql和redis都需要处理，删除相关记录
+		
+	4、下载共享文件
+		a) mysql的下载量+1(mysql操作)
+		b) 判断元素是否在集合中(redis操作)
+		c) 如果不存在，从mysql导入数据，如果存在，有序集合score+1 (mysql和redis交互)
+		
+	5、下载排行版展示
+		a) mysql共享文件数量和redis共享文件数量对比，判断是否相等
+		b) 如果不相等，清空redis数据，重新从mysql中导入数据到redis (mysql和redis交互)
+		c) 从redis读取数据，给前端反馈相应信息
+	
+//====================>登陆token验证，redis操作：
+	1、登陆操作
+		a) 如果用户登陆成功， 生成token字符串
+		b) redis保存此字符串，用户名：token
+			set key value		每次set，就会把上一次的值覆盖
+			get key
+			expire key 86400 	key有效时间为24小时
+			
+			SETEX key seconds value
+			
+			
+		c) 给前端返回此token字符串
+		
+	2、客户端每次操作，发送的请求包必须包含此token字符串，验证成功后，才能继续下一步操作
+	3、如果验证失败，需要重新登陆
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

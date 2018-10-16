@@ -1,0 +1,36 @@
+################storage.conf为fdfs存储服务器配置文件信息
+
+主要需要配置的地方：
+第11行：group_name=group1 #组，根据实际需要自行配置
+
+第15行：bind_addr=192.168.31.138 #存储服务器绑定的ip
+
+第24行：port=23000	#存储服务器绑定的端口
+
+第41行：base_path=/usr/fastdfs/storage #日志路径
+
+第138行：store_path0=/usr/fastdfs/fastdfs0 #文件存放的日志
+
+第118行：tracker_server=192.168.31.138:22122 #指定tracker服务器ip和端口，不能是127.0.0.1
+
+################mod_fastdfs.conf为FastDFS的Nginx模块配置文件
+
+主要需要配置的地方：
+第10行：base_path=/usr/fastdfs/storage #保存日志目录, 跟storage.conf一致即可
+
+第40行：tracker_server=192.168.31.138:22122 #指定tracker服务器ip和端口，不能是127.0.0.1, 确保跟storage.conf一致即可
+
+第44行：storage_server_port = 23000 #storage服务器的端口号，确保跟storage.conf一致即可
+
+第47行：group_name = group1 #当前服务器的group名，确保跟storage.conf一致即可
+
+第53行：url_have_group_name = true #文件url中是否有group名，这个最好设置为true，这样方便nginx服务器解析
+
+第57行：store_path_count = 1 #存储路径个数，需要和store_path个数匹配
+
+第62行：store_path0 = /usr/fastdfs/fastdfs0 #存储路径, 跟storage.conf一致即可
+
+第118行：设置用户组信息
+
+
+

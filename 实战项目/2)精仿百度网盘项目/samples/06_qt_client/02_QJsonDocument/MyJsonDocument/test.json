@@ -1,0 +1,28 @@
+{ 
+"files": 
+	[
+	  {
+        "user": "yoyo",
+        "md5": "e8ea6031b779ac26c319ddf949ad9d8d",
+        "time": "2017-02-26 21:35:25",
+        "filename": "test.mp4",
+        "share_status": 0,
+        "pv": 0,
+        "url": "http://192.168.31.109:80/group1/M00/00/00/wKgfbViy2Z2AJ-FTAaM3As-g3Z0782.mp4",
+        "size": 27473666,
+         "type": "mp4"
+        },
+	
+		{
+        "user": "yoyo",
+        "md5": "e8ea6031b779ac26c319ddf949ad9d8d",
+        "time": "2017-02-26 21:35:25",
+        "filename": "test.mp4",
+        "share_status": 0,
+        "pv": 0,
+        "url": "http://192.168.31.109:80/group1/M00/00/00/wKgfbViy2Z2AJ-FTAaM3As-g3Z0782.mp4",
+        "size": 27473666,
+         "type": "mp4"
+        }
+	]
+}

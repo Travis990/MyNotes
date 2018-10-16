@@ -1,0 +1,268 @@
+服务器反馈给前端的状态码 {"code":"000"}
+
+登陆token：
+
+登陆：
+	成功：
+		{
+			"code": "000",
+			"token": "xxx"
+		}
+	 
+	失败：
+		{
+			"code": "001",
+			"token": "xxx"
+		}
+	
+
+	
+token验证成功：{"code":"110"}
+token验证失败：{"code":"111"}
+
+注册：
+	成功：{"code":"002"}
+	该用户已存在：{"code":"003"}
+	失败：{"code":"004"}
+
+秒传文件：
+	文件已存在：{"code":"005"}
+	秒传成功：  {"code":"006"}
+	秒传失败：  {"code":"007"}
+	
+上传文件：
+	成功：{"code":"008"}
+	失败：{"code":"009"}
+	
+分享文件：
+	成功：{"code":"010"}
+	失败：{"code":"011"}
+	别人已经分享此文件：{"code", "012"}
+	
+删除文件：
+	成功：{"code":"013"}
+	失败：{"code":"014"}
+	
+获取用户文件列表：
+	成功：文件列表json
+	失败：{"code": "015"}
+	
+下载文件pv字段处理
+	成功：{"code":"016"}
+	失败：{"code":"017"}
+	
+取消分享：
+	成功：{"code":"018"}
+	失败：{"code":"019"}
+	
+转存文件：
+	成功：{"code":"020"}
+	文件已存在：{"code":"021"}
+	失败：{"code":"022"}
+
+//====================登陆用户
+127.0.0.1:80/login
+
+post数据(json)
+{
+	user:xxxx,
+	pwd:xxx
+}
+
+
+//====================注册用户
+127.0.0.1:80/reg
+
+post数据(json)
+{
+	userName:xxxx,
+	nickName:xxx,
+	firstPwd:xxx,
+	phone:xxx,
+	email:xxx
+}
+
+//======================我的文件
+按中图标：下载、分享、删除、属性
+没有按中图标：按下载量升序、按下载量降序、刷新、上传
+
+//===1、秒传功能：
+127.0.0.1:80/md5
+
+post数据(json)
+{
+	user:xxxx,
+	md5:xxx,
+	fileName: xxx
+}
+
+//===2、上传文件：
+127.0.0.1:80/upload
+
+post数据如下：
+------WebKitFormBoundary88asdgewtgewx\r\n
+Content-Disposition: form-data; user="itcast"; filename="xxx.jpg"; md5="xxxx"; size=10240\r\n
+Content-Type: application/octet-stream\r\n
+\r\n
+真正的文件内容\r\n
+------WebKitFormBoundary88asdgewtgewx
+
+//===3、我的文件展示页面：
+
+127.0.0.1:80/myfiles?cmd=count		//获取用户文件个数
+post数据json包如下：
+{
+	"user": "yoyo"
+}
+
+//获取用户文件信息 127.0.0.1:80/myfiles&cmd=normal
+//按下载量升序 127.0.0.1:80/myfiles?cmd=pvasc
+//按下载量降序127.0.0.1:80/myfiles?cmd=pvdesc
+
+
+post数据json包如下：
+
+//start文件位置的起点，count文件的数量，则需要显示0~9位置为文件
+{
+	"user": "yoyo"
+	"start": 0
+	"count": 10
+}
+
+
+服务器给前端反馈的信息
+{ 
+"files": 
+	[
+	  {
+        "user": "yoyo",
+        "md5": "e8ea6031b779ac26c319ddf949ad9d8d",
+        "time": "2017-02-26 21:35:25",
+        "filename": "test.mp4",
+        "share_status": 0,
+        "pv": 0,
+        "url": "http://192.168.31.109:80/group1/M00/00/00/wKgfbViy2Z2AJ-FTAaM3As-g3Z0782.mp4",
+        "size": 27473666,
+         "type": "mp4"
+        },
+	
+		{
+        "user": "yoyo",
+        "md5": "e8ea6031b779ac26c319ddf949ad9d8d",
+        "time": "2017-02-26 21:35:25",
+        "filename": "test.mp4",
+        "share_status": 0,
+        "pv": 0,
+        "url": "http://192.168.31.109:80/group1/M00/00/00/wKgfbViy2Z2AJ-FTAaM3As-g3Z0782.mp4",
+        "size": 27473666,
+         "type": "mp4"
+        }
+	]
+}
+
+		/*
+        {
+        "user": "yoyo",
+        "md5": "e8ea6031b779ac26c319ddf949ad9d8d",
+        "time": "2017-02-26 21:35:25",
+        "filename": "test.mp4",
+        "share_status": 0,
+        "pv": 0,
+        "url": "http://192.168.31.109:80/group1/M00/00/00/wKgfbViy2Z2AJ-FTAaM3As-g3Z0782.mp4",
+        "size": 27473666,
+         "type": "mp4"
+        }
+        */
+        //-- user	文件所属用户
+        //-- md5 文件md5
+        //-- createtime 文件创建时间
+        //-- filename 文件名字
+        //-- shared_status 共享状态, 0为没有共享， 1为共享
+        //-- pv 文件下载量，默认值为0，下载一次加1
+        //-- url 文件url
+        //-- size 文件大小, 以字节为单位
+        //-- type 文件类型： png, zip, mp4……
+		
+
+
+
+//分享文件
+127.0.0.1:80/dealfile?cmd=share
+post数据json包如下：
+{
+	"user": "xxx",
+	"token": "xxx",
+	"md5": "xxx",
+	"filename": "xxx"
+}
+
+//删除文件
+127.0.0.1:80/dealfile?cmd=del
+post数据json包如下：
+{
+	"user": "yoyo",
+	"token": "xxx",
+	"md5": "xxx",
+	"filename": "xxx"
+}
+
+//下载文件pv字段处理
+127.0.0.1:80/dealfile?cmd=pv
+post数据json包如下：
+{
+	"user": "yoyo",
+	"md5": "xxx",
+	"filename": "xxx"
+}
+
+
+//======================共享列表
+按中图标：下载、属性、取消分享、转存文件
+没有按中图标：刷新
+
+127.0.0.1:80/sharefiles?cmd=count		//获取用户文件个数
+get请求
+
+
+//获取普通共享文件信息 127.0.0.1:80/sharefiles&cmd=normal
+//按下载量升序 127.0.0.1:80/sharefiles?cmd=pvasc
+//按下载量降序127.0.0.1:80/sharefiles?cmd=pvdesc
+
+按下载量降序127.0.0.1:80/sharefiles?cmd=pvdesc
+
+
+post数据json包如下：
+//start文件位置的起点，count文件的数量，则需要显示0~9位置为文件
+{
+	"start": 0,
+	"count": 10
+}
+
+{
+	"filename": "test.mp4",
+	"pv": 0
+}
+
+
+//下载文件pv字段处理
+//127.0.0.1:80/dealsharefile?cmd=pv
+
+//取消分享文件
+//127.0.0.1:80/dealsharefile?cmd=cancel
+
+//转存文件
+//127.0.0.1:80/dealsharefile?cmd=save
+
+token验证：
+	1、我的文件
+	2、秒传
+	3、分享文件
+	4、删除文件
+	
+
+
+
+
+
+
+

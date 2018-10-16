@@ -1,0 +1,134 @@
+-- 创建一个名称为dfs的数据库。
+-- create database dfs;
+
+-- 删除数据库dfs
+-- drop database dfs;
+
+-- 使用数据库 dfs
+use dfs;
+
+-- =============================================== 用户信息表
+-- id：用户序号，自动递增，主键
+-- name：用户名字
+-- nickname：用户昵称
+-- phone：手机号码
+-- email：邮箱
+-- createtime：时间
+create table user
+(   id bigint not null primary key AUTO_INCREMENT,
+	name VARCHAR(128) not null,
+	nickname VARCHAR(128) not null,
+	password VARCHAR(128) not null,
+	phone VARCHAR(15) not null,
+	createtime VARCHAR(128),
+	email VARCHAR(100),
+	constraint uq_nickname unique(nickname), constraint uq_name unique(name)
+);
+
+-- 插入
+-- insert into user (name, nickname, password, phone, createtime, email) values ('itcast', 'itcast', '123456', '110', '2017-01-11 17:47:30', '110@qq.com' );
+
+-- 查询
+-- select id from user where name = "itcast";
+
+
+-- =============================================== 文件信息表
+-- md5 文件md5
+-- file_id 文件id
+-- url 文件url
+-- size 文件大小, 以字节为单位
+-- type 文件类型： png, zip, mp4……
+-- count 文件引用计数， 默认为1， 每增加一个用户拥有此文件，此计数器+1
+create table file_info
+(
+	md5 varchar(200) not null primary key,
+	file_id varchar(256) not null,
+	url varchar(512) not null,
+	size bigint,
+	type VARCHAR(20),
+	count int
+);
+
+-- 更新
+-- update file_info set count = 2 where md5 = "bae488ee63cef72efb6a3f1f311b3743";
+
+
+-- =============================================== 用户文件列表
+
+-- user	文件所属用户
+-- md5 文件md5
+-- createtime 文件创建时间
+-- filename 文件名字
+-- shared_status 共享状态, 0为没有共享， 1为共享
+-- pv 文件下载量，默认值为0，下载一次加1
+create table user_file_list
+(
+	user varchar(128) not null,
+	md5 varchar(200) not null,
+	createtime VARCHAR(128),
+	filename varchar(128),
+	shared_status int, 
+	pv int
+);
+
+-- 查看某个用户的文件列表
+-- select md5 from user_file_list where name = "itcast";
+
+-- 查看某个文件的属性
+-- select * from file_info where md5 = "bae488ee63cef72efb6a3f1f311b3743";
+
+-- 设置某个文件是否共享
+-- update user_file_list set shared_status = 1 where md5 = "bae488ee63cef72efb6a3f1f311b3743" and user = 'itcast';
+
+
+-- 多表查询
+select user_file_list.*, file_info.url, file_info.size, file_info.type from file_info , user_file_list
+where user = "yoyo" and file_info.md5 = user_file_list.md5;
+
+select user_file_list.filename, file_info.size, file_info.type, file_info.md5 from file_info , user_file_list
+where user = "yoyo" and file_info.md5 = user_file_list.md5 limit 2, 3;
+
+-- 查询第n+1行到第m+n行记录
+select * from table1 limit n, m;
+SELECT * FROM table LIMIT 5,10；返回第6行到第15行的记录
+
+-- 删除某行
+-- DELETE FROM Person WHERE LastName = 'Wilson' 
+
+-- =============================================== 用户文件数量表
+-- user		文件所属用户
+-- count 	拥有文件的数量
+create table user_file_count
+(
+	user varchar(128) not null primary key,
+	count int
+);
+
+-- 更新
+-- update user_file_count set count = 10 where user = "itcast";
+
+-- 删除
+--delete from user_file_count where user = "itcast";
+
+--如果用户名为：xxx_share_xxx_file_xxx_list_xxx_count_xxx，代表共享文件的数量
+
+-- =============================================== 共享文件列表
+-- user	文件所属用户
+-- md5 文件md5
+-- createtime 文件共享时间
+-- filename 文件名字
+-- pv 文件下载量，默认值为1，下载一次加1
+create table share_file_list
+(
+	user varchar(128) not null,
+	md5 varchar(200) not null,
+	createtime VARCHAR(128),
+	filename varchar(128),
+	pv int
+);
+
+
+
+
+
+

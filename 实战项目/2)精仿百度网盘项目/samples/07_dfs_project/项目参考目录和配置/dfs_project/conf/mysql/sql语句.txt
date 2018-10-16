@@ -1,0 +1,52 @@
+-- 创建一个名称为dfs的数据库。
+-- create database dfs;
+
+-- 删除数据库dfs
+-- drop database dfs;
+
+-- 使用数据库 dfs
+use dfs;
+
+-- 创建用户表
+create table user
+(   u_id bigint not null primary key AUTO_INCREMENT,
+	u_name VARCHAR(40) not null,
+	nicheng VARCHAR(40) not null,
+	password VARCHAR(40) not null,
+	phone VARCHAR(15) not null,
+	createtime timestamp,
+	email VARCHAR(40),
+	constraint uq_nicheng unique(nicheng), constraint uq_u_name unique(u_name)
+);
+
+-- file_id 文件id
+-- url 文件url
+-- filename 文件名字
+-- createtime 文件创建时间
+-- user	文件所属用户
+-- type 文件类型： png, zip, mp4……
+-- shared_status 共享状态, 0为没有共享， 1为共享
+-- count 文件引用计数， 默认为1， 共享一次加1
+-- pv 文件下载量，默认值为1，下载一次加1
+
+create table file_info
+(
+	file_id varchar(200) not null primary key,
+	url varchar(512) not null,
+	filename varchar(128),
+	createtime timestamp,
+	user VARCHAR(40) not null,
+	type VARCHAR(20),
+	shared_status int, 
+	count int,
+	pv int
+);
+
+-- 查询
+-- select u_id from user where u_name = "itcast";
+
+-- 插入
+-- insert into user (u_name, nicheng, password, phone, createtime, email) values ('itcast', 'itcast', '123456', '110', '2017-01-11 17:47:30', '110@qq.com' );
+
+-- 更新
+-- update file_info set count = 2 where file_id = "group1/M00/00/01/wKgfbVh2AGKASftLAAD-JOf3Vps147.jpg";
