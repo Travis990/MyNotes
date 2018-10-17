@@ -1,0 +1,448 @@
+1 单例模式
+    保证一个类的对象，在整个程序的生命周期中只有一个
+
+    访问：
+        在程序的任何地方都可以访问
+            1 全局变量
+                不符合面向对象思想，面向对象思想是封装
+
+            2 类内，静态成员
+
+                访问权限的设置 private /public
+
+                    控制访问权限设置为 private
+
+                提供一个public的函数，能够获取单例
+
+        class Singleton
+        {
+        public:
+            staitc Singleton &getInstance()
+            {
+                return smInstance;
+            }
+
+        private:
+            static Singleton smInstance;
+        };
+        C++关于单例的使用常用的是引用,不排除很多程序使用指针
+        使用引用，不存在什么问题，如果是使用指针
+
+
+    class Singleton
+    {
+    public:
+        staitc Singleton *getInstance()
+        {
+            return smInstance;
+        }
+
+    private:
+        static Singleton *smInstance;
+    };
+
+
+    考虑创建：
+        根据对象创建时机，分为两种模式：
+
+        饿汉模式
+            不管程序有没有使用这个对象，我都创建出来
+            程序一开始就直接new 一个对象
+
+
+        懒汉模式
+            只有程序要使用这个对象的时候我才创建
+            第一次调用getInstance就是要用单例对象的时候，这个时机创建
+
+            Singleton *getInstance()
+            {
+                if(smInstance==nullptr)
+                {
+                    //还没有创建，现在创建
+                    smInstance = new Singleton;
+                }
+                return smInstance;
+            }
+
+
+            多线程情况下 ，脏读
+                多个线程同时进入if代码块，创建多个
+
+
+            Singleton *getInstance()
+            {
+                mutex.lock();
+                if(smInstance==nullptr)
+                {
+                    //还没有创建，现在创建
+                    smInstance = new Singleton;
+                }
+                mutex.unlock();
+                return smInstance;
+            }
+
+
+            性能问题
+                加锁解锁耗时间的操作,创建单例的代码只要执行一次，其他情况不需要再执行
+
+
+            双重判定
+
+            Singleton *getInstance()
+            {
+                if(smInstance==nullptr)
+                {
+                    mutex.lock();
+                    if(smInstance==nullptr)
+                    {
+                        //还没有创建，现在创建
+                        smInstance = new Singleton;
+                    }
+                    mutex.unlock();
+                }
+                return smInstance;
+            }
+
+
+    对一些构造函数进行权限控制，不允许在其他地方创建对象
+        class Singleton
+        {
+        private:
+            //所有构造函数都必须声明在private 下，还要对编译器自动产生的默认的构造，显式的声明在这里
+            Singleton();
+            Singleton(const Singleton &other) ; //拷贝的构造
+            //C++11 还有移动的构造
+            Singleton(const Singleton &&other) ; //右值引用
+
+
+            //赋值拷贝函数
+            Singleton &opertor=(const Singleton &other); //可以不写，把构造函数封死 这里根本没机会调用
+        };
+
+        Singleton a = b; //默认调用 拷贝的构造而不是 赋值拷贝函数
+        a = c ; //这种情况下才会调用赋值拷贝函数
+
+
+
+    释放：
+        意义不大，单例在程序生命周期中存活，程序结束的时候，操作系统也会回收内存
+        如果有一些重要的代码写在Singleton 的析构函数，就要讨论 
+
+        程序结束的时候释放
+
+            1 main函数结束的时候 手动 delete
+                异常
+
+
+            2 清洁工人 Garbo ，自己写的一个类
+
+            class Garbo
+            {
+            public:
+                ~Garbo()
+                {
+                    //有权限访问 Singleton的 smInstance
+                    if(Singleton::smInstance)
+                    {
+                        delete smInstance;
+                        smInstance = nullptr;
+                    }
+                }
+            }
+
+            //声明一个全局变量
+            Garbo g;
+            全局变量在程序结束的时候释放，会调用它的析构函数 ，满足出异常也会自动释放
+
+            C++对于堆内存的控制，策略都是使用栈对象的生命进行管理
+
+
+
+            C++如何在程序开始或者结束的时候去执行一段代码
+                1 main函数开始和结束的时候去执行(C语言思路)
+
+                2 全局区域、全局类对象构造函数可以执行一段代码（程序开始）
+                3 全局类对象析构函数（程序结束）
+
+
+
+
+
+
+    关于mutex 的lock 和 unlock 
+    注意如果因为异常导致 unlock没有执行，就会一直锁住，产生死锁
+    解决方法就是使用lock_guard
+    lock_guard<mutex> guard(smMutex);
+    原理：
+        class lock_guard
+        {
+        public:
+            //构造函数调用lock
+            lock_guard()
+            {
+                mutex.lock();
+            }
+            //析构函数调用unlock
+            ~lock_guard()
+            {
+                mutex.unlock();
+            }
+        }
+        即使出现异常，栈上的对象也会被释放，会被解锁
+
+
+2 智能指针
+
+    auto_ptr 被 unique_ptr代替
+
+        new 
+        出现异常
+        delete 没有被执行,使用栈上的对象生命去实现一些释放的操作
+
+        uniq_ptr 
+            也是在析构函数中自动去释放资源
+
+
+
+        unique_ptr<Person> p(new Person);   //delete p; 
+        //数组形式要注意[]
+        unique_ptr<Person[]> p(new Person[10]);  //delete [] p;
+
+        只能指针的使用，当做普通指针来用，重写了 -> 操作符
+        p->doSth();   执行 person::doSth()
+
+        重置
+        p.reset(new Person) //先释放之前的指针，再重新赋值
+
+
+        unique_ptr的设计是唯一的
+
+            unique_ptr<Person> p2 = p; //错误 unique_ptr不能拷贝，只能移动（C++11 移动语义）
+
+
+
+
+    shared_ptr    支持 拷贝
+
+        也是记录指针的地址，支持拷贝，没有人再使用这个地址的时候就自动释放掉
+
+        用了引用计数  
+
+        shared_ptr<Person> p(new Person);  
+
+        p对象里边会维护一个引用计数 ，此时 是1 
+
+        shared_ptr<Person> p2 = p; //触发了拷贝的构造 ,引用计数变成2
+
+        p释放 引用·计数-1  ，此时引用计数回到1
+
+
+        到最后 p2 也被释放， 1-1 = 0  ，此时才执行 delete 删除person指针
+
+
+        当最后一个 shared_ptr 释放的释放的时候才会去delete 资源
+
+
+        引用计数很多C++程序都在用，比如cocos2d-x ，资源释放也是使用引用计数
+
+            obj->retain();   //引用+1
+            obj->release();  //引用-1  ，如果最后计数为0，释放
+
+
+
+        关乎引用计数的 递归引用问题
+
+            class A
+            {
+                shared_ptr<B> ptrB;
+            }
+
+            class B
+            {
+                shared_ptr<A> ptrA;
+            }
+
+            A a = new A; 
+            B b = new B;
+            a.ptrB 指向了 b
+            b.ptrA 指向了 a
+
+            大家都不释放
+            解决的方案，就是一个使用智能指针，一个使用普通指针或者弱指针(weak_ptr)
+
+
+3 关于登录的思路
+
+
+
+    服务器如何记住我是刚才登录过的那个人？
+
+        qq wechat，使用的通信协议是 TCP 之上再实现一套自己的应用层协议
+
+            1 tcp连接，三次握手 + 应用层协议的握手
+            2 客户端 发送 用户名和密码，服务端通过验证后登录成功
+            3 在应用层协议上，进行收发信息
+            4 登出账户，
+            5 TCP 四次挥手
+
+            服务端通过登录步骤可以记住客户端是谁
+
+
+        http 协议不一样，是一个无状态的协议
+            因为http是短连接
+
+            1 TCP 三次握手
+            2 http请求报文
+            3 服务端回应http 响应报文
+            4 TCP 四次挥手
+
+            http服务器对于客户端来说做无差别服务
+
+
+            登录流程
+
+            1 TCP握手
+            2 用户名密码
+            3 登录成功的响应报文
+            4 TCP挥手
+
+
+            想获取文件列表
+            1 TCP握手
+            2 http请求报文
+            3 .....
+            4 TCP 挥手
+
+
+
+    将HTTP 调整为 有状态
+        1 每次发起HTTP请求报文，都带上用户名和密码
+            效率不高，每次都要查数据库
+            用户名和密码暴露的次数太多
+
+            不推荐
+
+        2 token 令牌 也叫 sessionid 
+
+            1 用户登录成功之后，服务端给一个token（某些规则生成的字符串)
+            2 客户端收到响应，记住token
+            3 客户端再发起http请求，带上token
+
+
+
+    网站，baidu taobao .....
+
+        使用 cookie 
+
+        1 访问服务器的资源（登录或者某些操作），服务器响应头里边会有一个cookie字段 Set-cookie key=value
+            浏览器会自动记住这个值
+
+        2 继续访问网站，浏览器 会在请求头里边带上这个值 Cookie : key =value .....
+
+
+        浏览器清理cookie，所有网站都要重登陆
+
+
+
+
+
+
+    
+    客户端：
+        1 读取用户的数据 用户名和密码 ，做校验
+        2 发送数据给服务端（密码也是使用MD5)
+        3 获取响应的报文，确定登录成功
+            将 token 记住
+
+
+
+    服务端：
+        1 收到用户请求数据，解析json提取参数
+
+        2 查询数据库
+            确定数据库有相应的用户
+            将用户的信息查出来 id name nickname ....
+            产生一个token 
+            将token和用户信息对应起来存到 redis (设置24小时有效)
+
+
+            返回给客户端
+
+
+        3 返回登陆成功的结果
+
+            {
+                code:0,
+                token:"xxxxxx"
+            }
+
+
+    token如何产生？
+        没有固定的算法，每个网站计算token方法都不一样
+
+        1 唯一(强抗碰撞)
+        2 不要让外界猜到
+
+            使用一些哈希算法 md5
+            计算日期+随机数 ....
+
+
+
+
+
+    token如何存储？
+        存内存 ， 使用 redis   (第二天的作业)
+
+        //使用以下方法来存储信息到redis,设定超时时间24小时
+        //token为key
+        //info 为要存入的信息
+        static void WriteInfoToRedis(std::string token , const LoginInfo &info) throw(runtime_error);
+
+        //使用以下方法来验证token信息,如果验证通过返回true,同时info被赋值,否则返回false
+        //token 为key
+        //info 为要传出的信息
+        static bool VerifyToken(const std::string token,LoginInfo &info) throw(runtime_error);
+
+
+
+
+
+base64
+
+    哈希
+        不可逆，同样的数据能够算出同样的哈希值
+    加密
+        可逆，使用密钥进行密钥
+        对称和非对称
+
+    编码
+        可逆，将一段二进制数据变成另一段
+
+
+
+
+    Qt 中使用 base64
+
+
+   使用QByteArray
+
+        QByteArray arr = "";
+        arr.toBase64();
+
+        从base64转回来
+
+        QByteArray::fromBase64("数据")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
