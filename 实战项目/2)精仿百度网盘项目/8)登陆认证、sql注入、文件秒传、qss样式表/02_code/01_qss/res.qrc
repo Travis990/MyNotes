@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>imgs/title_max.png</file>
+    </qresource>
+</RCC>

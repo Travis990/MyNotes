@@ -1,0 +1,300 @@
+1 sql注入
+    插入一些特殊的字符，来修改你的sql语句的规则
+
+
+    登录的sql
+        select * from user where name = '....'  and password = '...'
+
+        将name的字段替换为  aaaa' or '1' = '1 
+
+        select * from user where name = 'aaaa' or '1' = '1'  and password = '123456'
+
+
+
+        实现删除数据库   mysql.h
+
+        select * from user where name = 'aaa' or '1'='1'  and password = '123456' ; drop database cloud_disk; select * from user where '1'='1'
+
+
+
+    防护：
+        做法只有一个：
+            对用户传过来的数据做严格判断，如果有影响SQL的特殊字符，就转义掉
+
+
+        使用API还有另一种方法，使用准备语句
+            prepare statment
+
+    //使用？作为占位符，之后再填充
+    unique_ptr<sql::PreparedStatement> 
+        stmt(con->prepareStatement("select id,nickname,phone,email from user where name = ? and password = ?"));                            
+    stmt->setString(1,info.userName); //字符串有特殊字符，会自动做转义，防止sql注入  
+    stmt->setString(2,info.passwd);                                                                                                    stmt->setString(2,info.passwd);                                                                                                                                        
+    unique_ptr<sql::ResultSet> res(stmt->executeQuery());                                                                                                                  
+    if(res->next())   
+
+
+
+    不要让mysql的用户权限太高,比如root，可以删库
+
+    创建多几个mysql的用户 ，分别赋予不同权限，有些能查有些有权限改
+
+
+
+2 上传功能的实现
+
+    客户端：
+        1 客户端构造文件数据POST到服务器 fastCGI是 upload  使用multipart的数据格式
+            信息包括文件的文件名  文件数据 ,类型 ,token
+
+
+            客户端上传文件的流程：
+                1 打开一个对话框选择文件
+                    QFileDialog::getOpenFileName   单选文件   返回值文件地址 QString
+                    QFileDialog::getOpenFileNames  多选      返回多个文件地址 QStringList
+
+                2 构造multipart的数据
+                    1 逐个字节构造数据，根据multipart的数据结构  
+                    samples/06_qt_client/06_QNetworkAccessManager/04_upload
+                        boud
+                        content-disposition .....
+                        content-type: ....
+                        \r\n
+                        数据正文
+                        boud--
+
+                        使用QByteArray data
+                        data.append(bound)
+                        data.append("content .....")   //token 也要传递出去
+                        data.append("content-type : image/png");
+                        data.append("\r\n\r\n")
+                        追加文件的数据
+                        data.append(file.readAll());
+                        data.append("\r\n")
+                        data.append(bound)
+
+
+                        注意content-type 的计算，  是 MIME类型
+                            txt -> text/plain
+                            json -> application/json
+
+                            通过QMimeDatabase 来确定文件是什么类型
+                            QMimeType mimeType = QMimeDatabase().mimeTypeForFile(fileName);
+                            data.append(mimeType.name());
+
+
+                        灵活
+
+                    2 构造 QHttpMultiPart 对象
+                        QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+
+                        QHttpPart filePart;
+                        //自动根据文件类型来算出数据的MIME类型，比如text/plain  application/json
+                        //filePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("image/jpeg"));
+                        QMimeDatabase mimeDb;
+                        QMimeType mimeType = mimeDb.mimeTypeForFile(path);
+                        filePart.setHeader(QNetworkRequest::ContentTypeHeader, mimeType.name());
+                        filePart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                                           QString("form-data;token=\"%1\";filename=\"%2\"")
+                                            .arg("b6dc7a1386174e7c2c05b39252f74323")
+                                            .arg(fileName));
+                        filePart.setBodyDevice(file);
+                        multiPart->append(filePart);
+
+                        使用 NetworkManager::post(req,multiPart) //数据发送出去
+
+
+                关于客户端上传文件进度的显式
+                QNetworkReply 里边有信号 uploadProgress(qint64 已经上传的字节数,qint64 总共要上传的自己数)
+                    在上传文件的过程中会持续的触发这个信号
+
+                    connect(reply, &QNetworkReply::uploadProgress,
+                        [=](qint64 bytesRead, qint64 totalBytes)
+                        {
+                            //使用槽函数的两个参数 设置 进度条的进度，设置进度条的最大值，和当前所在值
+                            if(totalBytes != 0) //这个条件很重要
+                            {
+                                ui->progressBar_2->setMaximum(totalBytes); //最大值
+                                ui->progressBar_2->setValue(bytesRead);    //当前值
+                            }
+
+                        }
+                    );
+
+
+        2 获取响应信息
+
+
+    服务端：
+        1 处理 mulitpart 数据
+            提取文件名，文件的数据，类型，token
+
+
+        2 验证token
+            不通过：
+                返回错误信息
+                {
+                    code:用户无效的错误码（UserInvalid)
+                }
+
+
+        3 将文件数据提取出来，放到本地目录 ,推荐使用/tmp 放置一些临时文件  (第5天的作业)
+            如果/tmp目录下面的文件忘记删除，重启电脑，也会自动删除
+
+            计算一下MD5
+             MD5Maker md5(data,len);
+             md5.getDigestHexString();
+
+
+        4 将文件上传到fastDFS  (第一天的作业)
+            拿到一个fileID
+
+        5 将用户的文件名和 fileID 存到 mysql里边
+            同时操作两张表，必须要开事务
+
+            存 file_info表，文件的基础信息表
+
+            insert into file_info(file_id,md5,size,type,count,createtime)
+                values(fileId,md5,size,content-type,1,now())
+
+            存用户文件关系表 user_file_list
+
+            insert into user_file_list(uid,filename,file_id,createtime)
+                values(uid,filename,fileid,now())
+
+
+
+            确保两个操作都成功的情况下才提交
+
+
+        6 结果的返回
+            成功返回0，失败返回其他错误
+            {
+                code:0
+            }
+
+
+3 秒传功能
+
+    一些云盘，在文件已经存在于服务器的时候，不需要用户走上传流程，而是直接将文件划给用户 
+
+    核心问题：服务器怎么样知道客户端要上传的文件已经存在于服务器里边
+
+        做一致性校验，MD5 计算
+
+
+
+    客户端
+
+        1 打开某个文件,计算MD5 
+        2 构造json发送给服务端
+
+            {
+                token : "xxxxxxxxxxxx",
+                md5:"xxxxxxxxxxx",
+                filename:"文件名"
+            }
+
+        3 响应处理
+
+            1 妙传成功
+                提示一下
+
+            2 秒传失败
+                正常上传的流程
+
+
+
+
+    服务端
+        1 提取参数 
+            token filename md5
+
+        2 验证token
+            确定用户是谁 用户id
+
+        3 查数据库，md5存不存在
+            select * from file_info where md5 = ?
+
+        4 如果存在
+            将文件划给用户
+
+            在user_file_list添加一行数据
+            insert into user_file_list(uid,file_id,filename,createtime)
+                values(......,now()) 
+
+
+
+
+
+            {
+                code:0
+            }
+
+        5 不存在
+            {
+                code:文件不存在的错误码
+            }
+
+
+4 qt 样式表
+
+    选择器
+        选择哪些控件或者子窗口受影响
+
+        *  通配所有
+        QPushButton             类型选择器 ，直接指定某个类  包括子类都会受影响
+        QPushButton[flat="false"] 属性选择器，某个类的属性符合某个值，就受影响
+        .QPushButton            类选择，指定某个类，不包括子类
+
+        QPushButton#okButton     ID #号后面跟着的是ID
+
+        QDialog QPushButton      后代选择器,对象树的后代受影响
+        QDialog > QPushButton    儿子选择器,跟后代选择器一样，只影响第一层子对象
+
+
+        QComboBox::drop-down { image: url(dropdown.png) } 子控件选择
+            不同的控件，拥有的子控件不一样
+
+
+
+    伪状态选择
+        QPushButton:hover    表示按钮在鼠标移动进来的时候样式设置
+        QPushButton:!hover   !是取反，除了鼠标进来的状态
+
+        QCheckBox:hover:checked  状态叠加，同时鼠标进来，同时也是被勾上的状态 
+
+
+
+
+
+    盒子模型
+        一个子窗口的样式组成部分
+        margin ： 边框外面那部分
+        border ： 边框
+        padding : 边框和内容的间隙
+        content : 内容
+
+
+
+    注意普通 QWidget 窗口支持的qss属性有限
+    想要支持更多的属性要改代码 ,修改窗口的paintEvent
+
+  void CustomWidget::paintEvent(QPaintEvent *)
+  {
+      QStyleOption opt;
+      opt.init(this);
+      QPainter p(this);
+      style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+  }
+
+
+
+
+
+
+
+
+
+
+
