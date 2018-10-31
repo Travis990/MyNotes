@@ -1,0 +1,272 @@
+1 auditctl
+
+    对审计服务的规则控制命令
+        使用root权限来执行命令
+        auditctl -l       查看当前审计的规则列表 
+
+        auditctl -s       查看当前审计服务的状态
+
+        auditctl -D       删除所有的规则
+
+        auditctl -w ..... -p  .... -k  。。。  添加一条监控规则
+            auditctl 添加规则只是临时添加，重启审计服务的时候，临时的规则是会被丢弃
+
+
+
+2 ausearch
+    基于审计日志 audit.log
+    相当于一个日志的筛选工具，能够根据某些条件查询出想要的日志
+
+        ausearch -ui  用户id
+            查看某个用户id相关的审计日志
+
+        ausearch -f  文件名
+            查看跟某个文件相关的日志
+
+        ausearch -k  关键字
+            查看跟某个关键字相关的日志
+
+
+        ...
+
+
+3 aureport
+
+    基于审计日志 audit.log产生的一份简短的报告，比较有参考意义
+
+    aureport -au 
+        查看跟鉴权相关的日志
+
+    aureport -m 
+        查看跟账号修改相关的日志
+
+
+
+
+
+4 网络嗅探工具
+
+    是不是应该每台服务器都安装网络嗅探工具？
+
+        不允许，理由，服务器被黑客黑了，黑客可以利用你的嗅探工具检测内网通信
+
+
+
+
+5 tcpdump
+
+    sudo tcpdump -i 网卡名字(通过ifconfig来确认)
+
+    抓到的包每行数据格式大致如下
+    19:14:33.655371 IP 192.168.177.170.ssh > 192.168.177.1.61220: Flags [P.], seq 4989280:4989644, ack 3277, win 315, options [nop,nop,TS val 9165573 ecr 817003857], length 364
+        时间戳      ip报文   源地址.端口号(ssh:22端口) > 目的地址.端口号        tcp报文有序号                                                                                    数据长度
+
+
+
+    关于端口号被ssh替换的问题，tcpdump自动根据端口号换算成协议名
+        cat /etc/service | grep ssh
+
+    ip也可能会替换成域名  可以在/etc/hosts文件找到对应
+
+
+
+    使用ssh远程登录抓包，注意可能会进入死循环，产生一堆数据报文
+
+        1 远程登录免不了服务器和ssh客户端做通讯，产生数据报文
+
+        2 数据报文也会被tcpdump捕获，捕获之后也会继续输出到屏幕上（继续产生报文发送客户端）
+
+
+
+
+    指定过滤条件
+
+        过滤ip或者主机
+            tcpdump (src|dst) host  ip(主机域名)
+
+        过滤端口
+            tcpdump (src|dst) port  端口号
+
+        过滤协议
+            tcpdump  (tcp|udp|arp|icmp)
+
+
+        多个条件进行过滤
+
+            与或非
+            and
+            or
+            not
+
+
+            tcpdump src host 1092.168.177.1 and port 80 and not udp
+
+
+
+6 kali系统安装ssh服务以及配置
+
+    1 要使用apt安装ssh服务
+        apt install openssh-server
+
+
+    2 要修改ssh配置，支持root用户远程登录
+        openssh默认不允许root用户远程登录
+
+        vim /etc/ssh/sshd_config
+
+        打开选项设置如下
+        PermitRootLogin yes
+
+
+    3 重启或者启动ssh服务
+
+        systemctl start|restart ssh.service
+
+
+
+
+    系统配置设置为中文
+
+
+        打开右上角的系统配置
+        搜索 language 
+
+
+
+
+
+7 telnet的介绍
+
+    登录linux系统，使用ssh命令
+        ssh使用非对称加密(RSA...)
+
+
+    以前使用telnet 来进行远程登录 ，没有加密
+        telnet服务基本淘汰
+        telnet客户端还是可以使用
+
+
+    telnet的客户端是一个很单纯tcp客户端，可以连接任何的tcp服务
+
+        telnet ip port
+        以tcp三次握手连接到某台服务器上，连接上之后可以在终端输入一些文本然后发送
+
+
+
+
+
+    telnet的安装
+
+        itcast@itcast $ sudo apt-get install telnet telnetd
+        apt-get install xinetd
+        vim /etc/xinetd.d/telnet
+        内容如下
+        service telnet  
+        {  
+            disable = no  
+            flags = REUSE  
+            socket_type = stream  
+            wait = no  
+            user = root  
+            server = /usr/sbin/in.telnetd  
+            server_args = -h  
+            log_on_failure += USERID  
+        }    
+
+        /etc/init.d/xinetd restart 重启服务
+
+
+    使用wireshark或者 tcpdump进行抓包，抓取整个登录流程的数据
+    使用telnet 登录服务器
+        telnet -l 用户名 ip
+        之后要手动输入密码
+
+
+    telnet的通信流程
+
+        1 tcp 三次握手
+        2 telnet终端的参数匹对（终端颜色...)
+        3 telnet响应 password: 期待客户端输入密码
+        4 客户端输入密码，每次输入一个文本都会触发一个tcp报文传送到服务器上 ，最后是回车
+        5 登录成功
+            ......
+
+
+
+8 防火墙
+    sudo iptables -t filter -A INPUT -s 192.168.177.1 -j DROP 
+        防火墙往filter表里边的INPUT链追加一条规则 ，只要是从192.168.177.1来的数据，都丢弃（DROP)
+
+
+    4表5链N规则
+
+        规则：
+            如：只要是从192.168.177.1来的数据，都丢弃（DROP)
+
+            规则的数量可以不限 ，n规则
+
+
+        链：
+            多条规则的集合
+
+            在数据报文流经的路途上，添加一些关卡，对报文进行检测
+                检测的过程中可能使用到n条规则,都通过规则，就允许通过
+                否则就丢弃掉
+
+
+
+
+        4表：
+            mangle nat raw filter
+            实现宏观的策略，对应应用层面
+
+
+
+
+
+
+    格式： iptables [-t table] COMMAND chain CRITERIA -j TARGET
+        -t table ： 4表, 默认filter
+            filter
+            nat
+            ...
+        COMMAND：定义如何对规则进行管理
+            -A  对某个链追加一条规则，加到规则表的最后
+
+            -L  查看某个链，或者整个表的规则
+
+            -D  删除某个链的第几条规则
+
+            -I  在链的第几条规则前插入一条规则
+
+            -F  清空规则
+
+
+        chain： 指定链
+            INPUT
+            OUTPUT
+            PREROUTING
+            FORWARD
+            POSTROUTING
+
+        CRETERIA: 指定匹配准则（ip、协议、端口）
+            ...
+
+        -j TARGET :指定如何进行处理 （DROP or ACCEPT）
+            ACCEPT 允许防火墙接收数据包
+            DROP 防火墙丢弃包
+
+
+
+
+
+
+
+
+
+    192.168.177.0/24   (cidr)
+        192.168.177.0   255.255.255.0
+
+
+
+

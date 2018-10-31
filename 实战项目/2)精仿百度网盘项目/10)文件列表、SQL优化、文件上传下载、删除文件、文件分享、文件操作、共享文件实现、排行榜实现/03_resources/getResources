@@ -1,0 +1,4 @@
+#!/bin/bash
+#https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-8.0.11-src.tar.gz
+#wget https://github.com/mysql/mysql-connector-cpp/archive/8.0.zip -O mysql-connector-c++-8.0.zip
+#cmake -DWITH_JDBC .

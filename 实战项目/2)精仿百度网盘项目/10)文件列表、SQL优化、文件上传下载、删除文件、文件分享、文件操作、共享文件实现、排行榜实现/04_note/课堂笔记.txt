@@ -1,0 +1,387 @@
+1 关于sql的优化
+
+    select uid,filename,
+        a.file_id,md5,
+        shared_status,pv 
+    from user_file_list a join file_info b 
+           on a.file_id=b.file_id 
+    where uid = ?
+
+
+    表连接的计算，笛卡尔积
+        {a,b}   {c,d}
+
+        {
+            ac,
+            ad,
+            bc,
+            bd
+        }
+
+
+        _____
+         a
+        ____
+         b
+        _____
+
+        _____
+         c
+        ____
+         d
+        _____
+
+
+        -----------
+         a    |  c
+        -----------
+         a    |  d
+        -----------
+         b    |  c 
+        -----------
+         b    |  d 
+        -----------
+
+
+    表连接的效率损耗是构造笛卡尔积  两张表数据的行数相乘
+
+        file_info 1000w 行
+        user      1000w 行
+
+
+    优化SQL的首要原则，针对多表进行优化不要让笛卡尔积变得非常大
+
+        先使用where条件将每个表的数据进行一个筛选，最后才做表连接
+
+
+
+
+    结论：
+        笛卡尔积，表连接要放到sql计算的最后，先通过一些条件将表连接之前的数据降到最低，最后才做表连接
+
+
+        b 表里边查出某个用户所持有的文件    ,可能最后剩下几百行数据
+
+            1000w * 100 = 10y
+
+
+
+最终sql：
+select uid,filename,a.file_id,md5,size,type,date_format(a.createtime,'%%Y-%%m-%%d %%h:%%i:%%s') as createtime,shared_status,pv 
+    from 
+        (select uid,filename,file_id,createtime,shared_status,pv from user_file_list where uid=?) a 
+        join file_info b 
+        on a.file_id=b.file_id
+
+
+
+
+
+
+
+2 文件的基本操作
+
+    删除
+        删除 user_file_list 表里边相应的信息就可以
+
+        delete from user_file_list where uid=? and filename=?
+        file_info表里边的数据要不要删除？
+            1 判断某个文件已经没有用户再引用
+
+                A -> 1.txt   ->  md5_1
+                B -> 2.txt   ->  md5_1   同一个文件
+
+                如果A用户删除1.txt，把 file_info表里边的数据删除掉，影响B用户的使用
+
+
+                file_info 表中有 count字段，如果有哪个用户引用了这个文件，count+1 ，用户删除文件的时候count-1
+
+                到最后count为0，表示这个文件没有人引用，可以删除数据 ，记住删除 fastDFS 的数据
+
+            2 不删除文件，好处，还可以支持秒传
+
+                主要看产品经理
+
+
+        {
+            token:"xxxxxxxxxxxxx",
+            filename: "1.txt"
+        }
+
+        服务端删除文件的流程
+        1 先判断文件是否已经共享 存在 share_file_list里边
+        2 如果文件已经共享的情况下，要删除share_file_list的数据
+        3 删除 user_file_list里边的数据
+        4 file_info 对应文件的 count 计数 要-1
+
+
+
+    分享
+        将文件设置为共享的状态，其他用户可以看到
+        user_file_list 表中有 shared_status  设置为1 表示将文件共享出去
+        查询云盘有哪些共享的文件，
+            select .... from user_file_list wher shared_status =1
+
+        (产品经理考虑的问题)
+        如果用户A共享了文件 1.txt
+        用户B能够看到1.txt
+        此时用户A又重命名成为2.txt（该功能还没做）
+        用户B看到的是1.txt还是2.txt
+
+            如果B也能看到 2.txt（同时重命名共享文件），就按照以上方法来进行数据库查询
+
+            如果B还是只能看到1.txt （不会受文件拥有者重命名影响）
+            要另外创建多一张表(数据库中第四张表shared_file_list ,字段跟user_file_list基本一致)
+            每次用户共享文件之后，就将user_file_list里边的数据拷贝一份到shared_file_list
+                select .... from user_file_list
+                insert into shared_file_list(...) values(.......)
+
+        {
+            token:"xxxxxxxxxxxxx",
+            filename: "1.txt"
+        }
+
+    取消分享
+
+        将某个文件的共享状态置为0，同时删除shared_file_list表中的数据
+        delete from shared_file_list where  ....
+        update user_file_list set shared_status = 0 where ...;
+
+
+        {
+            token:"xxxxxxxxxxxxx",
+            filename: "1.txt"
+        }
+
+
+
+    下载统计
+        客户端每次下载完成之后发送一个 http json告诉服务端哪个文件下载了
+        容易被刷榜
+
+        请求下载的时候顺便服务端做统计，因为下载集成到storage服务器,修改 fastDFS nginx 模块的代码，嵌入一些业务
+             收到某个下载文件请求，发送一条信息到某个服务器做统计
+
+
+
+        select pv from user_file_list where ...
+
+        pv++
+
+        update user_file_list set pv = ? where v....
+
+
+        {
+            token:"xxxxxxxxxxxxx",
+            filename: "1.txt"
+        }
+
+
+
+    因为客户端发送的数据请求的格式一致，做一下功能整合，文件操作的cgi   dealfile_cgi.cpp
+        {
+            act:remove|share|cancelShare|pv,
+            token:"xxxxxxxxxxxxx",
+            filename: "1.txt"
+        }
+
+        服务端收到请求后
+        判断
+            act 是什么值，再去决定做什么操作
+
+        最终返回结果
+            {
+                code:0|其他
+            }
+
+
+
+
+3 共享文件的操作
+
+
+    共享文件的列表获取    sharefiles_cgi.cpp
+        从 shared_file_list 表中获取文件列表就可以
+
+        跟获取某个用户的文件列表一致
+
+        1 客户端返送json数据
+            {
+                token:"xxxxxx",
+                start:0,
+                count:1000
+            }
+
+        2 服务端验证token，返回文件列表
+
+            如果文件太多怎么办？分页
+                每次查询只返回一定量数据。100条，超过这个数据等待客户端点击下一页
+
+
+            select ...
+                from ...
+                where ..
+                limit [m,]n
+
+                m是可选参数，条件前面m条记录
+                n最多返回多少条记录
+
+
+                每页100数据
+                第一页 limit 0,100
+                第二页 limit 100,100
+                第三页 limit 200,100
+
+
+        3 客户端获取数据显示到窗口上
+
+            {
+                code:0,
+                [
+                    {
+                        shareId:1,
+                        url:"http://xxxxxxxx",
+                        filename:"xxxx"
+                        pv:1
+                    }
+                ]
+            }
+
+
+
+    共享文件转存到我的文件     dealsharefile_cgi.cpp
+
+        客户端发送数据
+            {
+                token:"xxxxx",
+                shareId:"共享文件的id"
+            }
+
+        服务端拿到数据后
+            保护判断
+                用户是否已经有同名的文件..
+
+
+            1 根据shareid查出文件
+                select .... from shared_file_list where id = ?
+
+            2 将这些数据存到用户文件关系表中
+                insert into user_file_list ....
+
+
+        客户端收到返回
+            {
+                code:0|其他
+            }
+
+
+
+
+    共享文件的下载统计
+
+        1 客户端下载一个文件后发送一个http请求告诉服务器下载了什么文件
+            {
+                token:"xxxxx",
+                shareId:1
+            }
+
+
+        2 服务端收到请求后解析出数据
+            select ... from share_file_list  where id = ? 
+            查出某个文件的下载量pv
+
+            pv++
+
+            update share_file_list set pv = ? where id = ?
+
+
+
+
+
+
+
+
+4 下载榜
+    对共享文件的下载量进行排名统计
+
+    查询共享文件下载量排名靠前的100个文件信息
+
+
+
+
+    排序耗性能，1000w个文件,减少排序的频率，redis
+
+        1 第一次 A用户查询 数据从mysql中读取前100的信息
+
+        2 服务端从mysql查询出数据将100名的信息存到redis
+
+        3 第二次 B用户查询下载榜
+
+        4 服务端从redis读取这100名的信息返回给客户端
+
+
+        下载榜的数据并不是实时更新，有时间限制 ,redis 设置排名榜过期时间
+
+            过期时间可以设置 1分钟 5分钟 1小时 等
+
+        如果redis数据没有了，下次请求来就还是走mysql查询，还会存redis
+
+
+    1 客户端 发送
+        {
+            "act": "ranklist"
+            "token":"xxxxx"
+        }
+
+
+    2 先判断redis有没有
+        exsist   ..
+
+        有
+            从redis里边拿数据出来
+
+        没有
+            走第三步
+
+    3 从mysql查出数据 
+
+        select ....
+        from share_file_list
+        order by pv desc
+        limit 100
+
+
+        最后如何存到redis里边?有什么数据类型能够对应？
+            mysql查出来的数据
+            [
+                { 
+                    id :1111,
+                    filename:"xxxx",
+                    pv: 100
+                }
+            ]
+
+
+            string 
+            set
+            list
+                每个元素也是存string
+            hash
+                key value
+
+
+
+
+        实现思路：
+            直接存成string，string的内容是一个json
+
+
+
+
+
+
+
+
+
+
+

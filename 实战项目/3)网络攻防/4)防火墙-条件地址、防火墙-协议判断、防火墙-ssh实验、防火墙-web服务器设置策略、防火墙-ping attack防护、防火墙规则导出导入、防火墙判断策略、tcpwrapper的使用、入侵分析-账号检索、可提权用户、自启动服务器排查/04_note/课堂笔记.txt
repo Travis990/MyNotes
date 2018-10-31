@@ -1,0 +1,319 @@
+1 iptables 的  criteria
+
+    通过地址来进行判断
+        -s  主机ip   常用于 INPUT链
+            判断某个ip过来的报文
+
+        -s 网络号 (192.168.1.0/24)
+            判断某个网段过来的报文
+
+
+        -d 主机ip/网络号      常用于 OUTPUT链
+            判断到达哪里去的ip报文
+
+            不考虑路由的情况下，默认ip的目的地址应该是本机的ip
+
+                1 可能本机有多个IP ,多个网卡
+                    192.168.177.1
+                    192.168.60.2    
+
+                    可以使用-d 目的地址来进行设防，比如只能从 177.1来访问
+
+
+                2 添加到 output链
+                    就可以对本机的对外访问进行限制
+
+                    GFW 长城防火墙 防止我们访问 facebook google
+
+
+
+    基于协议进行判断
+
+        -p 
+            tcp|udp  --dport 目的端口号|--sport 源端口号
+
+
+
+
+            icmp --icmp-type 0-n
+
+                其中icmp的类型 可以使用 man icmp 来进行查看
+
+                8 是 echo request (ping)
+                0 是 echo reply  (ping的响应)
+
+
+
+
+
+
+
+
+
+2 网络号 
+
+    192.168.177.0/24    255.255.255.0
+                        11111111.11111111.11111111.0000000
+
+    子网掩码是用来划分网段的
+
+        192.168.177.233  255.255.255.0   对应的主机号和网络号分别是多少？
+        ip跟子网掩码做按位与运算，算出网络号
+        192.168.177.0
+        ip跟子网掩码的反码做按位与，算出主机号
+        0.0.0.233
+
+
+        网络号相同的机器间可以相互通信
+
+
+
+        192.168.177.233  255.255.255.128            
+                         11111111.11111111.11111111.10000000
+
+
+            192.168.177.B11101001
+            网络号
+            192.168.177.128/25
+            主机号
+            0.0.0.105
+
+
+
+
+
+3 ssh实验
+
+    内网中有很多机器，有一台相对安全的堡垒机
+
+    其中有一台服务器A ，只能接受堡垒机ssh连接过来，其他机器的ssh连接统一拒绝掉
+
+    实验思路：
+        使用白名单机制，不在白名单就拒绝
+
+        做法：
+            1
+                修改默认策略 ACCEPT -> DROP 
+                添加 堡垒机的ip作为ACCEPT的条件
+
+
+            2   添加两条规则
+
+                input
+                    1 从堡垒机过来的连接，连接到ssh服务（22端口）,就通过
+                    2 从内网过来的连接，连接到ssh服务，都拒绝
+
+
+                output
+                    限制从22端口出去到任意机器，除了堡垒机
+
+            最终的实现如下(192.168.177.170是堡垒机)
+            Chain INPUT (policy ACCEPT)
+            target     prot opt source               destination         
+            ACCEPT     tcp  --  192.168.177.170      anywhere             tcp dpt:ssh
+            DROP       tcp  --  192.168.177.0/24     anywhere             tcp dpt:ssh
+
+            Chain FORWARD (policy ACCEPT)
+            target     prot opt source               destination         
+
+            Chain OUTPUT (policy ACCEPT)
+            target     prot opt source               destination         
+            ACCEPT     tcp  --  anywhere             192.168.177.170      tcp spt:ssh
+            DROP       tcp  --  anywhere             192.168.177.0/24     tcp spt:ssh
+
+
+
+
+
+
+4 ping 攻击 
+
+
+    ping服务器会占用服务器的资源，CPU，网络..
+
+    ping -s 包大小(65500)    64K 的字节
+
+
+        MTU
+
+
+    如果IP报文超过MTU，就要进行拆包
+    拆分出来的报文也还是一个独立的IP报文，能够保证不超过MTU
+
+        拆包和组包都是TCP/IP协议栈自动完成，路由器也支持
+
+
+    影响我们UDP编程 
+        UDP超过MTU，就拆包，
+            1 个 IP 报文 拆成 2个 ，如果传输过程中丢弃了一个，IP报文没办法组回来，最终UDP报文丢失
+            概率论
+            两个包都不丢失的概率？
+
+
+        UDP携带数据的长度不应超过1400
+
+
+
+
+    防护：
+        不应答
+
+        icmp不能完全禁止，跟TCP/IP协议栈一起，一个子协议
+
+
+
+        1 防火墙直接防止 ICMP echo request
+
+            iptables -t filter -A INPUT -p icmp --icmp-type 8 -j DROP
+
+        2 echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_all 
+
+
+5 防火墙规则的导入导出
+
+    导出：
+        iptables-save > 文件名
+            这个命令默认输出到标准输出，使用> 重定向到文件
+
+    导入
+        iptables-restore < 文件名
+            从标准输入中去读取规则配置,需要重定向标准输入到某个文件
+
+
+
+6 iptables 的规则判断顺序
+
+    Rules包括一个条件和一个目标(target)
+    如果满足条件，就执行目标(target)中的规则或者特定值。
+    如果不满足条件，就判断下一条Rules。
+    如果全部Rules都不匹配， 则执行默认Target (系统默认ACCEPT)
+
+
+
+
+
+7 tcp wrapper 
+    不是严格意义上的防火墙，只是应用层级别的防火墙
+
+    使用基础，服务器要连接了libwrap.so 库
+    使用 ldd 服务器可执行文件 查看连接的so库
+
+
+    使用方式
+        /etc/hosts.allow   允许的列表
+        /etc/hosts.deny    拒绝的列表
+        tcpwrapper 先判断 allow ，再判断deny，白名单制度
+
+            daemon_list : client_list [ : shell_command ]
+            例子：
+            sshd : 192.168.177.170    
+
+
+
+
+8 用户检查
+    检查有没有一些非法用户被创建（黑客留的后门）
+
+    /etc/passwd文件
+
+    多行多列的文件 ,列的分隔符是:
+
+    test01:x:1001:1001::/home/test01:/bin/bash 
+        用户名
+        密码（加密的放到shadow文件)
+        用户id
+        组id
+        用户的描述
+        用户的home目录
+        用户登录之后第一条执行的命令
+
+        如果用户登陆后的第一条命令是启动某个shell，那么就表示用户可以
+        执行一些其他命令，ls cd 。。。
+
+
+        其他用户登录命令是 nologin 或者 false，这些命令一执行就马上返回错误
+        相当于用户不能够登录，这些用户一般是用来启动相应的一些服务
+
+            使用某个用户来启动某个服务器
+             sudo -u mysql ./server 
+
+
+    如果确定某个用户有问题
+    通过id命令查看用户有没有加入一些敏感的组，比如shadow组可以查看 /etc/shadow
+
+
+    使用lastlog来查看用户最后的登录时间，确定活动频率
+
+    使用 last 用户名  命令来查某个用户的登录记录
+
+    使用 sudo lastb 用户名 命令来查看某个用户登录的坏记录(登录失败)
+        如果用户的坏记录比较多，有可能是在暴力破解
+
+
+    使用finger 用户名 来查看某个用户的综合信息
+
+
+9 系统的自启动服务
+
+    系统的启动级别
+       ┌─────────┬───────────────────┐
+       │Runlevel │ Target            │
+       ├─────────┼───────────────────┤
+       │0        │ poweroff.target   │        关机
+       ├─────────┼───────────────────┤
+       │1        │ rescue.target     │        拯救
+       ├─────────┼───────────────────┤
+       │2, 3, 4  │ multi-user.target │        多用户
+       ├─────────┼───────────────────┤
+       │5        │ graphical.target  │        图形界面启动
+       ├─────────┼───────────────────┤
+       │6        │ reboot.target     │        重启
+       └─────────┴───────────────────┘ 
+
+
+    /etc/rcn.d 
+        n表示0-6
+        里边放置的都是一些自启动的脚本 
+
+        S开头的脚本都是启动的时候要执行的脚本
+        K开头的脚本，都是系统关闭的时候会执行的脚本
+
+
+
+
+    从这里边查看哪些陌生的服务，适当的清理，以防是一些后门
+
+
+    使用sytemctl命令对这些服务进行操作
+
+        sudo systemctl start|stop|restart|status 服务名
+
+
+    自启动的开启以及关闭
+        sudo systemctl enable|disable 服务名
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,425 @@
+1 pam
+    标识：登录系统的用户需要标识， 标识解决“我是谁”的话题
+        指用户名
+
+        管理员对系统用户进行标识
+            test01  --   张三
+            test02  --   李四
+
+            如果李四用test01登录系统，做了一些危险的操作导致了问题
+
+
+    鉴别：鉴别解决“我是我”的话题
+        指密码
+
+        如何鉴别 test01 当前用户 是 张三 
+
+        指纹识别,脸部识别 .... 根据一些生物特征来鉴定
+
+
+
+    高铁上 ，要出示车票+身份证
+
+
+    可插拔的鉴权模块(PAM)
+
+    什么是可插拔？
+        1 可以配置
+        2 可以扩展
+        3 不需要重启重编译等操作
+
+        实现方式，就是使用动态库 so ，一个库一个鉴别方式
+        使用哪种鉴别方式就配置使用不同的so库就可以
+
+
+
+
+    操作系统有两种登录方式:
+    ssh远程登录:
+        1 输入用户名  (标识)
+        2 输入密码    (鉴别)
+        3 完成登录进入到shell环境
+
+
+    图形界面登录
+
+        1 输入用户名   (标识) 
+        2 输入密码、用指纹登录  (鉴别)
+        3 完成登录进入到桌面环境
+
+
+
+
+    我们操作系统什么时候会触发鉴权？
+
+        1 登录
+        2 高危的操作
+            passwd
+            chsh   改shell
+
+
+        pam就是控制不同时机的鉴权的方式
+
+
+
+    pam 鉴权模块so的存放地址
+
+    /lib/x86_64-linux-gnu/security
+
+
+    不同服务的pam鉴权配置文件存放在
+
+    /etc/pam.d/
+
+
+2 pam的配置
+
+    /etc/pam.d /etc/pam.conf
+
+    如果存在/etc/pam.d ，那么pam.conf不用看（不生效）
+
+
+    正常情况下，配置文件有5列
+    service type control modlue-path module-args
+
+        service 指服务
+            passwd  sshd ...
+
+            如果不同服务同时写在一个配置文件 ，/etc/pam.conf文件
+            就要有这列指定，指定配置属于哪个服务
+            否则省略
+
+
+
+        type 
+            auth：表示鉴别类接口模块类型用于检查用户和密码，并分配权限
+            account：表示账户类接口，主要负责账户合法性检查，确认帐号是否过期，是否有权限登录系统等；
+            session：会话类接口。实现从用户登录成功到退出的会话控制；
+            password：口令类接口。控制用户更改密码的全过程。
+
+            简单的认为就是 pam so模块中的函数 ,每个pam 的so模块都有这4个函数
+            这里指定要调用哪个函数做什么功能
+
+
+        control 
+
+            他的四种可能的取值分别为required、Requisite、sufficient或_optional：
+                required：表示该行以及所涉及模块的成功是用户通过鉴别的必要条件，
+                    只有当对应于应用程序的所有带 required标记的模块全部成功后，该程序才能通过鉴别。
+
+                requisite：与required相仿，只有带此标记的模块返回成功后，用户才能通过鉴别。
+                     不同之处在于其一旦失败就不再执行堆中后面的其他模块，并且鉴别过程到此结束，同时也会立即返回错误信息。
+
+                sufficient：表示该行以及所涉及模块验证成功是用户通过鉴别的充分条件。
+                    也就是说只要标记为sufficient的模块一旦验证成功，
+                    那么PAM便立即向应用程序返回成功结果而不必尝试任何其他模块。
+
+                optional：他表示即便该行所涉及的模块验证失败用户仍能通过认证。
+                    在PAM体系中，带有该标记的模块失败后将继续处理下一模块。
+                    也就是说即使本行指定的模块验证失败，也允许用户享受应用程序提供的服务。
+
+                [value1=action1 value2=action2 ... default=defaultValue]:   根据函数返回值做什么操作
+                    最后一个(default)能够用来设置上面的返回值无法表达的行为
+                    actionN可以是一个非负整数或者是下面的记号之一：ignore、ok、done、bad、die和reset。如果是非负整数n，就表示需要忽略后面n个同样类型的模块。通过这种方式，系统管理者可以更加灵活地设置层叠模块，模块的层叠路径由单个模块的反应决定。
+                    关于这几个记号的详细解释：
+                    ignore：如果使用层叠模块，那么这个模块的返回值将被忽略，不会被应用程序知道。
+                    bad：他表示这个返回码应该被看作是模块验证失败的标志。如果这个模块是层叠模块的第一个验证失败的模块，那么他的状态值就是整个层叠模块验证的状态值和结果。
+                    die：终止层叠模块验证过程，立刻返回到应用程序。
+                    ok：告诉PAM这个模块的返回值将直接作为所有层叠模块的返回值。也就是说，如果这个模块前面的模块返回状态是PAM_SUCCESS，那这个返回值就会覆盖前面的返回状态。注意：如果前面的模块的返回状态表示模块验证失败，那么不能使用这个返回值再加以覆盖。
+                    done：终止后续层叠模块的验证，把控制权立刻交回应用程序。
+                    reset：清除所有层叠模块的返回状态，从下一个层叠模块重新开始验证。
+                  
+
+
+        module-path 指pam模块的文件是哪个
+            最终就到/lib/x86_64-linux-gnu/security 目录去查找相应的so文件
+
+
+
+        module-args
+            传递到 模块接口的一些参数
+
+
+    关于 passwd 命令（修改用户密码）的流程   pam 的配置
+        password    [success=1 default=ignore]  pam_unix.so obscure sha512    
+            调用pam_unix.so 里边的函数 password  ，传递参数 obscure sha512 
+            这个函数就是linux/unix设置密码的功能
+            如果返回 success , =1    如果是非负整数n，就表示需要忽略后面n个同样类型的模块
+                忽略后面1个 password 模块
+
+        password    requisite           pam_deny.so         
+            (如果上一步成功，那么这个模块会被忽略)
+            pam_deny ，不管哪个接口，都返回失败
+
+
+
+        password    required            pam_permit.so      
+
+            调用 pam_permit.so 里边的password 函数， 该模块不管调用哪个接口，最终都会返回成功
+
+
+
+    pam使用 配置文件进行编程
+
+        每个pam 模块 有什么选项，都可以通过 man的方式来查看
+            man pam_unix 
+
+
+
+
+3 关于破解密码的方法
+
+    暴力破解
+
+    知道密码 8位数字 
+        00000000 - 9999999
+
+
+        给予一个密码全集进行多次尝试，直到匹配密码为止
+
+        特性：
+            1 破解率 100%
+            2 缺点
+                耗时太长
+
+
+    字典攻击
+        将常用的密码，记录下来，形成一个字典
+        123456
+        12345678
+        888888
+        88888888
+        ....
+
+        非全集的暴力破解
+        成功与否完全取决于字典有没有正确的密码
+        如果有，时间效率高
+
+
+
+
+    如何提高破解难度
+        将破解时间延长
+
+        1 将全集撑大
+            密码长度
+            密码的复杂度
+                大写字母，小写字母 ....
+
+
+        2 控制暴力破解的频率
+            黑客 1秒钟尝试10000个密码
+            限制到1秒钟你只能尝试1个 
+
+
+
+
+4 pam_cracklib
+
+    retry=3 键入口令错误时，重复次数
+    minlen=8 口令最小长度
+    lcredit=-1 小写字符至少为1 
+        至少1 个 使用负数  ，至多的就是用正数
+    ucredit=-1 大写字母至少为1
+    dcredit=-1 数字至少为1
+    ocredit=-1 特殊字符至少为1
+    difok=3 新旧口令差别至少3个字符
+        123456
+        234567
+        两者差别只有1个
+
+    reject_username 口令中，不允许包括用户名称（正序和逆序）
+
+        itcast 和 tsacti
+
+        root -> toor
+
+
+
+
+    heima,1234
+
+    root 用户要不要受限？
+        1 root用户至高无上 不允许有限制
+        2 密码通用的，大家都受限
+
+
+        如果要让root用户也受限，在cracklib 添加选项
+        enforce_for_root
+
+
+5 降低暴力破解频率（锁定账户）
+    正常情况下没有锁定账户
+
+    使用pam_tally 模块
+
+        deny=n
+            如果失败多少次，就锁账户
+
+        unlock_time=n
+            锁定账户的时间
+            常见 300或600 单位秒
+            登录失败的次数受限于deny，才锁定
+
+        lock_time=n
+            当用户登录失败后，总是锁账户n秒
+            只要失败一次就锁定
+
+    进入 /etc/pam.d/sshd 进行配置
+        在一开始添加以下的内容
+        auth required pam_tally.so unlock_time=180  deny=2 
+            当密码输入错误次数到达2的时候锁定账户3分钟
+
+
+    锁定时间并不是越长越好
+        越长，暴力破解也会导致正常用户登录也被拒绝
+        在紧急情况下正常用户如果不能登录，也会造成损失
+
+
+
+6 特权能力机制
+    将root用户的权利分为N份
+    不同的linux内核，支持的特权能力数量不一样
+    man capabilities 可以看到当前系统支持的特权
+
+    特权作用在谁身上？
+        不是作用在用户身上 ,作用在程序文件上
+
+        作用在cat程序 文件，能够读取任何文件，不受任何权限控制，哪怕文件没有读权限
+
+
+
+
+    使用特权
+        设置特权
+            setcap "CAP_XXX1,CAP_XXX2+ep" 程序文件 
+        查看程序的特权
+            getcap 程序文件
+
+
+    关于+epi的补充
+    epi分别对应程序的三个特权集，每个程序都自己维护特权集，三个特权集在不同的时机生效
+        cap_effective:当一个进程要进行某个特权操作时,操作系统会检查
+            cap_effective的对应位是否有效,而不再是检查进程的有效UID是否为0. 
+            例如,如果一个进程要设置系统的时钟,Linux的内核就会检查cap_effective的CAP_SYS_TIME位(第25位)是否有效.
+        cap_permitted:表示进程能够使用的能力,在cap_permitted中可以包含cap_effective中没有的能力，
+            这些能力是被进程自己临时放弃的,也可以说cap_effective是cap_permitted的一个子集.
+
+        cap_inheritable:表示能够被当前进程执行的程序继承的能力. 
+            a.out -> 再启动一个子进程 b.out 
+
+
+
+
+    设置服务器允许绑定1024以下端口的特权
+        setcap "CAP_NET_BIND_SERVICE+ep" ./server
+
+
+
+7 审计
+    事后追踪技术，满足可追朔性
+    确定系统安装了审计服务
+    pa aux | grep audit
+
+    sudo apt install auditd
+
+    sudo /etc/init.d/auditd start|stop|status|restart
+    sudo systemctl start|stop|restart|status auditd.service
+
+
+
+    审计日志的位置
+        /var/log/audit/audit.log
+            随着时间的增长，日志会变多
+
+            audit.log.1
+            audit.log.2.gz
+            ...
+            保留7天的日志，每天就使用.1 .2  来放置，还会自动打包压缩
+
+
+
+
+    审计配置文件的位置
+
+        /etc/audit
+
+        auditd.conf  配置审计服务的功能配置文件
+        audit.rules  配置审计规则配置文件
+
+
+
+
+
+    关于audit.rules 的配置规则
+
+        关注文件系统的内容
+        -w path-to-file -p permissions -k keyname
+
+            -w 表示要watch哪个文件 后面跟文件名
+
+            -p 盯文件的哪个或者多个权限 
+                r   读  
+                w   写
+                x   执行
+                a   属性变化    chmod a+w 1.txt
+                只要有用户动用了这些权限，就产生审计日志
+
+                想知道某个文件被人读取，就要关注这个文件的r权限
+
+            -k keyname
+                表示审计日志，使用什么关键字进行标识,方便查询
+
+
+
+    关于审计日志的查看
+
+            type=SYSCALL 
+            msg=audit(1540627341.388:124): 
+            arch=c000003e 
+            syscall=2 
+            success=yes 
+            exit=8 
+            pid=32377 
+            auid=1000 
+            uid=1000 
+            gid=1000  
+            tty=pts0 
+            ses=1 
+            comm="vim" 
+            exe="/usr/bin/vim" 
+            key="helloworld"
+        什么时间
+            msg=audit  时间戳 
+            1540627341.388 
+            转回到正常时间   date -d "@1540627341.388"
+
+            时间戳后面还有一个消息id
+            如果id一样，同一个事件产生的多条日志
+
+
+        谁干的
+            pid 进程id
+            uid 用户id
+            gid 哪个组id
+            tty 终端号
+
+
+
+        干了啥
+
+            comm  执行的命令  vim
+
+            key="helloworld"
+            当时配置审计规则标识的hellowor字段
+
+
+
+
+
+
+
+
+
+
+
