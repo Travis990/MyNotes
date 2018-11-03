@@ -1,0 +1,1 @@
+1. 项目属性>配置属性>常规>平台工具集>       改        Visual Studio 2015 - Windows XP (v140_xp)
