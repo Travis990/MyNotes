@@ -1,0 +1,8 @@
+﻿  XTcp.cpp
+\\192.168.163.131\code\dll_pack2\src\xsocket\xsocket\xtcp.cpp(87): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(119): note: 参见“strcpy”的声明
+\\192.168.163.131\code\dll_pack2\src\xsocket\xsocket\xtcp.cpp(127): warning C4996: 'strerror': This function or variable may be unsafe. Consider using strerror_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.10240.0\ucrt\string.h(178): note: 参见“strerror”的声明
+    正在创建库 ..\..\..\lib\xsocket.lib 和对象 ..\..\..\lib\xsocket.exp
+  xsocket.vcxproj -> \\192.168.163.131\code\dll_pack2\src\xsocket\xsocket\..\..\..\bin\xsocket.dll
+  xsocket.vcxproj -> ..\..\..\bin\xsocket.pdb (Full PDB)

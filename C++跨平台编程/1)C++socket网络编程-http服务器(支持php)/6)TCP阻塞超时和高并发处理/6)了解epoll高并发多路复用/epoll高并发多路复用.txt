@@ -1,0 +1,6 @@
+epoll多路复用IO高并发:
+	- 大量并发连接中只有少量活跃
+	- LT ( level triggered )     水平触发
+	- ET ( edge triggered )    边缘触发
+
+
