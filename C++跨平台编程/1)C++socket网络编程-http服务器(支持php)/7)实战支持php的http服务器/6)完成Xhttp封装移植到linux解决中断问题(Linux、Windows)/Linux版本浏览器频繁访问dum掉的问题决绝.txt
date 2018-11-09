@@ -1,0 +1,21 @@
+1. 注意使用火狐浏览器才能演示错误
+
+2. 演示步骤, 打开浏览器访问链接,频繁刷新页面
+
+3. 调试步骤:
+	1) g++  [...]  -g     // g++编译后面加 -g
+	2) gdb ./xhttp
+	3) (gdb)>r       // 输入 r
+	4) 开始模拟频繁访问
+	```
+		Thread 912 "xhttp" received signal SIGPIPE, Broken pipe.
+		[Switching to Thread 0x7ffff654a700 (LWP 29938)]
+		0x00007ffff7bca9ff in __libc_send (fd=4, buf=0x7ffff6547620, n=10240, flags=0)
+		    at ../sysdeps/unix/sysv/linux/x86_64/send.c:26
+		26      ../sysdeps/unix/sysv/linux/x86_64/send.c: No such file or directory.
+	```
+	5) dum掉后查看错误信息, (gdb)>bt
+	6) 错误排查, 收到了一个信号 SIGPIPE
+	7) 解决方法: 在 server.cpp文件当中添加代码 signal(SIGPIPE, SIG_IGN);
+	8) 再重新编译, 执行
+	

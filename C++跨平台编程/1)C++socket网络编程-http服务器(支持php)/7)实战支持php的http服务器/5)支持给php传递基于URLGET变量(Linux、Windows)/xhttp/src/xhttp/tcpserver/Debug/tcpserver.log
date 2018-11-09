@@ -1,0 +1,4 @@
+﻿  server.cpp
+\\192.168.163.131\code\xhttp\src\xhttp\tcpserver\server.cpp(95): warning C4018: “<”: 有符号/无符号不匹配
+  tcpserver.vcxproj -> \\192.168.163.131\code\xhttp\src\xhttp\tcpserver\..\..\..\bin\tcpserver.exe
+  tcpserver.vcxproj -> ..\..\..\bin\tcpserver.pdb (Partial PDB)

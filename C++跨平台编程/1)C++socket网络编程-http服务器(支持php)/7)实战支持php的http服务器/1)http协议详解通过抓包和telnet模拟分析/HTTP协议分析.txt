@@ -1,0 +1,33 @@
+
+1. HTTP协议分析:
+	HTTP超文本传输协议, 所有的WWW文件都必须遵守这个标准
+	HTTP/1.0短连接, HTTP/1.1它支持持续连接
+
+2. HTTP协议详解之URL篇
+	HTTP URL(URL是一种特殊类型的URI, 包含了用于查找某个资源的足够的信息)的格式如下:
+		http://host[":"port][abs_path]
+
+	http表示要通过HTTP协议来定位网络资源; 
+	host表示合法的Internet主机域名或者IP地址; 
+	port指定一个端口号,为空则使用缺省端口80;
+	abs_path指定请求资源的URI;
+	如果URL中没有给出abs_path, 那么当它作为请求URI时, 必须以 "/" 的形式给出, 通常这个工作浏览器自动帮我们完成.
+
+3. Method Request-URI HTTP-Version CRLF
+	请求方法 (所有方法全为大写) 有多种, 各个方法的解释如下:
+		GET	请求获取Request-URI所标识的资源
+		POST	在Request-URI所标识的资源后附加新的数据
+		HEAD	请求获取由Request-URI所标识的资源的响应消息报头
+		PUT	请求服务器存储一个资源, 并用Request-URI作为其标识
+		DELETE	请求服务器删除Request-URI所标识的资源
+		TRACE	请求服务器回送收到的请求信息, 主要用于测试或诊断
+		CONNECT保留将来使用
+		OPTIONS	请求查询服务器的性能, 或者查询与资源相关的选项和需求
+
+
+
+
+
+
+
+

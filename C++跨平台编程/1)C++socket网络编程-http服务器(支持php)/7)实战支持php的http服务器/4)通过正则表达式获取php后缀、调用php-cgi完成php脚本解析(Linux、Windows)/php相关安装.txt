@@ -1,0 +1,9 @@
+
+1) php-cgi安装
+	为什么要安装php-cgi?  
+	-要想实现处理 index.php?id=12&name=dejan 后面的?传参的支持使用 php-cgi会容易些, 如果说只想单纯的解析不带参数的URI连接可以不安装
+
+	> apt-get install php-cgi
+
+
+
