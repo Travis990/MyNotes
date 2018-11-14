@@ -1,0 +1,7 @@
+﻿  XHttpServer.cpp
+  XHttpResponse.cpp
+\\192.168.163.131\code\xhttp\src\xhttp\tcpserver\xhttpresponse.cpp(46): warning C4018: “<”: 有符号/无符号不匹配
+  XHttpClient.cpp
+  正在生成代码...
+  tcpserver.vcxproj -> \\192.168.163.131\code\xhttp\src\xhttp\tcpserver\..\..\..\bin\tcpserver.exe
+  tcpserver.vcxproj -> ..\..\..\bin\tcpserver.pdb (Partial PDB)
