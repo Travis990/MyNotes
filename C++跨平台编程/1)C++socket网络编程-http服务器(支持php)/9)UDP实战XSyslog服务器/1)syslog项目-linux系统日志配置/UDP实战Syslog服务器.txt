@@ -1,0 +1,19 @@
+UDP实战Syslog服务器
+
+
+1.  配置linux系统日志
+	1) 配置syslog转发 (192.168.1.105 是要转发的目标ip)
+	> vim /etc/rsyslog.conf   在文件内容末尾处添加      *.* @192.168.1.105
+
+	2) 重启服务
+	> service rsyslog restart
+
+
+2. 在Windows中接收linux日志
+	1)
+
+
+
+3. 通过正则表达式分析出危险操作并警告
+
+
