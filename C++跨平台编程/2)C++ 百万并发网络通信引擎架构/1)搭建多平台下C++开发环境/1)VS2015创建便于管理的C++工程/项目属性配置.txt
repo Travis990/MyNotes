@@ -1,0 +1,8 @@
+1. 属性 > 所有配置 > 所有平台
+
+2. 配置属性 > 常规
+输出目录: $(SolutionDir)/bin/$(Platform)/$(Configuration)
+中间目录: $(SolutionDir)/temp/$(Platform)/$(Configuration)/$(ProjectName)
+
+
+
