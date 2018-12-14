@@ -1,0 +1,15 @@
+1. 安装 VMWare tools
+	Ubuntu:
+		如果提示 "Error: cannot mount filesystem: No such device"
+			> sudo apt-get install open-vm-dkms
+		
+		如果提示 "找不到该软件包.."
+			> sudo apt-get install open-vm-tools-dkms
+
+
+	Centos7
+		> yum install open-vm-tools
+
+
+2. 挂载 /mnt/hgfs 共享目录
+	>vmhgfs-fuse .host:/ /mnt/hgfs
