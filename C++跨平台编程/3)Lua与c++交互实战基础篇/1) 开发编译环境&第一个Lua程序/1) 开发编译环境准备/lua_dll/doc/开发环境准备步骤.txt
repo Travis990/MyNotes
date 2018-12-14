@@ -1,0 +1,34 @@
+
+1. 下载&安装Lua
+	下载Lua 5.1  http://www.lua.org/versions.html
+	(为什么用5.1? 因为 5.3版本性能有所下降出于稳定的考虑还是使用稳定的5.1版本)
+
+2. Lua编译
+	编译Lua为静态库 (不用静态库, 影响C++编译速度)
+	建立Lua编译器项目
+	编译Lua库为了以后对其拓展 (也可以直接下载库)
+
+	Windows编译步骤(VS2015):
+		1) 在src下建立vs c++控制台dll程序
+			添加新项目 -> Visual C++ -> Win32控制台应用程序 -> DLL -> 空项目
+
+		2) 拷贝lua5.1 src目录下的所有 .h .c 代码文件到项目目录下并添加现有项
+
+		3) 设置编译输出路径为 ../../../bin
+			项目属性配置:
+				常规:
+					输出目录:../../../bin/$(Platform)/$(Configuration)
+					中间目录:../../../temp/$(Platform)/$(Configuration)/$(ProjectName)
+
+		4) 设置输出 导入库路径为 ../../../lib
+			项目属性配置:
+				链接器:
+					高级 - 导入库:../../../lib/$(TargetName).lib
+
+		5) 添加LUA_BUILD_AS_DLL宏
+			项目属性配置:
+				C/C++:
+					预处理器 - 预处理器定义(在最前面添加):LUA_BUILD_AS_DLL;
+
+
+
