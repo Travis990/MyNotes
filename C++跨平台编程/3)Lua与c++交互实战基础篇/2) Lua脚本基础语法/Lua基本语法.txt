@@ -1,0 +1,115 @@
+Lua基本语法
+
+1. 入门必备语法
+	1) Lua 基础数据类型和变量
+		全局变量
+			b = 2
+
+		本地变量(尽量用本地, 保证即时的垃圾回收)
+			local a = 1
+
+		数据类型:
+			Nil
+			Booleans
+			Numbers
+			Strings
+
+		Nil 空类型:
+			用于区分具有一些数据或没有(nil)数据的值
+
+			全局变量设置为nil会交给垃圾回收
+				local a = nil
+				print(type(a))  --> nil
+
+		Booleans 类型:
+			但要注意Lua中所有的值都可以作为条件
+			除了false和nil为假, 其他值都为真, 0为真
+
+		Numbers 类型:
+			Lua中没有整数, 都是用浮点数运算
+			对应C的double类型
+			新版Lua中有基于64位的整型
+			tonumber() 转换格式, 仅支持字符串转换
+
+		Strings 类型:
+			tostring() 转换格式
+			[[]]多行字符串赋值
+			"与C一样的转义\""
+			..字符串拼接, 不能拼接 nil
+
+
+		String字符串处理:
+			字符串长度 string.len
+			字符串子串 string.sub(str, 3, 5)
+			字符串查找 local b, e = string.find(str, "HEAD")支持正则, 一次可以返回两个变量
+			字符串替换 string.gsub(str, "TEXT", "HDJ")支持正则
+
+	2) Lua 控制结构语句
+		if     条件语句
+		while  循环语句
+		repeat 循环语句(类似C的do while)
+		for    循环语句
+
+		if条件判断语句
+			代码示例:
+				if conditions then
+					then-part
+				elseif conditions then
+					elseif-part
+				else
+					else-part
+				end
+
+			逻辑运算:
+				and    or    not
+				
+				if(a==1 or a==3)
+				if(a==q and b==1)
+				if(not(a==1)) 注意加括号, 解决逻辑次序问题
+
+		while循环语句
+			代码示例:
+				while condition do
+					statements
+				end
+
+			break跳出循环, 没有 continue
+
+		repeat循环语句
+			代码示例:
+				repeat
+					statements
+				until conditions
+
+			break退出循环
+
+		for循环语句
+			数值循环
+				for var=from,to,step do
+					loop-part
+				end
+
+			范型循环: pairs遍历全部 ipairs遍历数组
+				for i,v in ipairs(a) do print(v) end
+
+
+	3) Lua 表和函数
+		Lua表处理:
+			表的大小 table.getn(t1)
+			插入     table.insert(a, pos, line) 不传pos相当于push_back
+			删除     table.remove(a, pos) 返回这次删除的值, 不传pos相当于pop_back
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

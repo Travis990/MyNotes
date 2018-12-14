@@ -1,0 +1,46 @@
+
+1. 创建一个Lua与C++结合的项目
+	构建步骤:
+		在当前 "解决方案" 下添加项目 first
+
+	项目配置:
+		常规:
+			输出目录:../../../bin/$(Platform)/$(Configuration)
+			中间目录:../../../temp/$(Platform)/$(Configuration)/$(ProjectName)
+
+		调试:
+			工作目录:../../../bin/$(Platform)/$(Configuration)
+
+		C/C++ - 常规:
+			附加包含目录:../../../inc
+
+		链接器:
+			常规:
+				附加库目录:../../../lib
+			输入:
+				附加依赖项:lua_dll.lib;
+
+2. 拷贝Lua5.1 src目录下的所有.h文件到 新建目录 ../../../inc/lua 下
+
+3. 添加main.cpp文件
+```
+extern "C"
+{
+#include <lua/lua.h>
+#include <lua/lauxlib.h>
+#include <lua/lualib.h>
+}
+
+int main()
+{
+	lua_State *L = lua_open();
+	luaopen_base(L);
+	luaL_loadfile(L, "main.lua");
+	lua_pcall(L, 0, 0, 0);
+
+	getchar();
+	return 0;
+}
+```
+
+
